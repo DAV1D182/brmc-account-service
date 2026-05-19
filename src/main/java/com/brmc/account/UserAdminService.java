@@ -81,6 +81,22 @@ class UserAdminService {
         ));
     }
 
+    /**
+     * Registra un usuario desde la pagina publica de login.
+     *
+     * <p>Siempre crea usuarios con rol USER y estado ACTIVE. No permite elevar privilegios desde
+     * el formulario publico; la gestion de roles se mantiene restringida al modulo ADMIN.</p>
+     *
+     * @param username nombre de acceso.
+     * @param password contrasena en claro recibida del formulario.
+     * @param fullName nombre visible del usuario.
+     * @param email correo opcional.
+     * @return usuario creado.
+     */
+    AppUser registerPublicUser(String username, String password, String fullName, String email) {
+        return createUser(username, password, fullName, email, AppRole.USER, AppUserStatus.ACTIVE);
+    }
+
     AppUser updateUser(
             String username,
             String password,

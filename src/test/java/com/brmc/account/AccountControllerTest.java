@@ -58,17 +58,43 @@ class AccountControllerTest {
     @Autowired
     private CreditNoteRepository creditNoteRepository;
 
+    @Autowired
+    private AppUserRepository appUserRepository;
+
     @Test
     @WithAnonymousUser
     void showsLoginPageAndProtectsHome() throws Exception {
         mockMvc.perform(get("/login"))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Ingresa tus credenciales")));
+                .andExpect(content().string(containsString("Ingresa tus credenciales")))
+                .andExpect(content().string(containsString("Crear usuario")));
 
         mockMvc.perform(get("/"))
                 .andExpect(status().is3xxRedirection());
 
         mockMvc.perform(formLogin("/login").user("admin").password("admin123"))
+                .andExpect(status().is3xxRedirection());
+    }
+
+    @Test
+    @WithAnonymousUser
+    void registersUserFromLoginPage() throws Exception {
+        var username = "cliente.login";
+
+        mockMvc.perform(post("/register")
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .param("username", username)
+                        .param("password", "cliente123")
+                        .param("fullName", "Cliente Login")
+                        .param("email", "cliente.login@brmc.com"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("/login?registered")));
+
+        var user = appUserRepository.findById(username).orElseThrow();
+        assertThat(user.role()).isEqualTo(AppRole.USER);
+        assertThat(user.status()).isEqualTo(AppUserStatus.ACTIVE);
+
+        mockMvc.perform(formLogin("/login").user(username).password("cliente123"))
                 .andExpect(status().is3xxRedirection());
     }
 
