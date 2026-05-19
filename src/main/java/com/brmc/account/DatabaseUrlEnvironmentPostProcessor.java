@@ -31,30 +31,36 @@ public class DatabaseUrlEnvironmentPostProcessor implements EnvironmentPostProce
      */
     @Override
     public void postProcessEnvironment(ConfigurableEnvironment environment, SpringApplication application) {
+        var databaseUrl = firstNonBlank(System.getenv("DATABASE_URL"));
         var rawUrl = firstNonBlank(
                 System.getenv("SPRING_DATASOURCE_URL"),
-                System.getenv("BRMC_DB_URL"),
-                System.getenv("DATABASE_URL")
+                databaseUrl,
+                System.getenv("BRMC_DB_URL")
         );
         if (rawUrl == null) {
             return;
         }
 
         var properties = new LinkedHashMap<String, Object>();
+        var credentialsFromDatabaseUrl = rawUrl.equals(databaseUrl)
+                && (rawUrl.startsWith("postgres://") || rawUrl.startsWith("postgresql://"))
+                && URI.create(rawUrl).getUserInfo() != null;
         if (rawUrl.startsWith("jdbc:postgresql://")) {
             properties.put("spring.datasource.url", rawUrl);
         } else if (rawUrl.startsWith("postgres://") || rawUrl.startsWith("postgresql://")) {
             properties.putAll(convertPostgresUrl(rawUrl));
         }
 
-        putIfPresent(properties, "spring.datasource.username", firstNonBlank(
-                System.getenv("SPRING_DATASOURCE_USERNAME"),
-                System.getenv("BRMC_DB_USERNAME")
-        ));
-        putIfPresent(properties, "spring.datasource.password", firstNonBlank(
-                System.getenv("SPRING_DATASOURCE_PASSWORD"),
-                System.getenv("BRMC_DB_PASSWORD")
-        ));
+        if (!credentialsFromDatabaseUrl) {
+            putIfPresent(properties, "spring.datasource.username", firstNonBlank(
+                    System.getenv("SPRING_DATASOURCE_USERNAME"),
+                    System.getenv("BRMC_DB_USERNAME")
+            ));
+            putIfPresent(properties, "spring.datasource.password", firstNonBlank(
+                    System.getenv("SPRING_DATASOURCE_PASSWORD"),
+                    System.getenv("BRMC_DB_PASSWORD")
+            ));
+        }
 
         if (!properties.isEmpty()) {
             environment.getPropertySources().addFirst(new MapPropertySource(PROPERTY_SOURCE_NAME, properties));
