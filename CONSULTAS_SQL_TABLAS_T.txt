@@ -1,0 +1,1226 @@
+BRMC - Consultas SQL para tablas con sufijo _t
+
+Tablas principales:
+- accounts_t
+- account_transactions_t
+<<<<<<< HEAD
+=======
+- id_sequences_t
+>>>>>>> 9a008f4 (Subir proyecto BRMC _v2)
+- disputes_t
+- payments_t
+- refunds_t
+- write_offs_t
+- dispute_settlements_t
+<<<<<<< HEAD
+- system_events_t
+
+=======
+- virtual_time_t
+- products_t
+- services_t
+- service_products_t
+- billinfo_t
+- bills_t
+- items_t
+- inventory_t
+- billing_runs_t
+- billing_charges_t
+- invoices_t
+- invoice_lines_t
+- system_events_t
+
+Columnas de tiempo:
+- created_t: fecha/hora real en la que el registro fue creado por la aplicacion.
+- pin_virtual_time_t: fecha/hora virtual vigente en el momento de la operacion de negocio.
+
+Importante:
+- created_t no debe cambiar cuando se mueve el pin virtual time.
+- pin_virtual_time_t permite saber con que fecha virtual se creo una cuenta, pago, reembolso,
+  disputa, producto, servicio, cargo de billing o evento.
+- Algunas tablas conservan created_at por compatibilidad con consultas existentes; para auditoria
+  tecnica usa created_t y para fecha logica usa pin_virtual_time_t.
+
+>>>>>>> 9a008f4 (Subir proyecto BRMC _v2)
+1. Consultar todas las cuentas
+
+SELECT *
+FROM accounts_t
+ORDER BY created_at ASC;
+
+2. Consultar una cuenta por id
+
+SELECT *
+FROM accounts_t
+WHERE id = 'AQUI_ID_CUENTA';
+
+3. Consultar pagos
+
+SELECT *
+FROM payments_t
+ORDER BY created_at ASC;
+
+4. Consultar pagos por cuenta
+
+SELECT *
+FROM payments_t
+WHERE account_id = 'AQUI_ID_CUENTA'
+ORDER BY created_at ASC;
+
+5. Consultar reembolsos
+
+SELECT *
+FROM refunds_t
+ORDER BY created_at ASC;
+
+6. Consultar reembolsos por cuenta
+
+SELECT *
+FROM refunds_t
+WHERE account_id = 'AQUI_ID_CUENTA'
+ORDER BY created_at ASC;
+
+7. Consultar historial consolidado de transacciones
+
+SELECT *
+FROM account_transactions_t
+ORDER BY created_at ASC;
+
+8. Consultar historial consolidado por cuenta
+
+SELECT *
+FROM account_transactions_t
+WHERE account_id = 'AQUI_ID_CUENTA'
+ORDER BY created_at ASC;
+
+9. Consultar solo pagos desde historial consolidado
+
+SELECT *
+FROM account_transactions_t
+WHERE type = 'PAYMENT'
+ORDER BY created_at ASC;
+
+10. Consultar solo reembolsos desde historial consolidado
+
+SELECT *
+FROM account_transactions_t
+WHERE type = 'REFUND'
+ORDER BY created_at ASC;
+
+11. Consultar disputas
+
+SELECT *
+FROM disputes_t
+ORDER BY created_at ASC;
+
+12. Consultar disputas pendientes
+
+SELECT *
+FROM disputes_t
+WHERE status = 'PENDING'
+ORDER BY created_at ASC;
+
+13. Consultar disputas cerradas por settlement
+
+SELECT *
+FROM disputes_t
+WHERE status = 'SETTLED'
+ORDER BY created_at ASC;
+
+14. Consultar disputas por cuenta
+
+SELECT *
+FROM disputes_t
+WHERE account_id = 'AQUI_ID_CUENTA'
+ORDER BY created_at ASC;
+
+15. Consultar write-offs
+
+SELECT *
+FROM write_offs_t
+ORDER BY created_at ASC;
+
+16. Consultar write-offs por cuenta
+
+SELECT *
+FROM write_offs_t
+WHERE account_id = 'AQUI_ID_CUENTA'
+ORDER BY created_at ASC;
+
+17. Consultar settlements de disputas
+
+SELECT *
+FROM dispute_settlements_t
+ORDER BY created_at ASC;
+
+18. Consultar settlements por disputa
+
+SELECT *
+FROM dispute_settlements_t
+WHERE dispute_id = 'AQUI_ID_DISPUTA'
+ORDER BY created_at ASC;
+
+19. Consultar settlements por cuenta
+
+SELECT *
+FROM dispute_settlements_t
+WHERE account_id = 'AQUI_ID_CUENTA'
+ORDER BY created_at ASC;
+
+20. Consultar eventos del sistema
+
+SELECT *
+FROM system_events_t
+ORDER BY created_at ASC;
+
+21. Consultar eventos por cuenta
+
+SELECT *
+FROM system_events_t
+WHERE account_id = 'AQUI_ID_CUENTA'
+ORDER BY created_at ASC;
+
+22. Consultar eventos de settlement
+
+SELECT *
+FROM system_events_t
+WHERE type IN ('DISPUTE_SETTLEMENT_CREATED', 'DISPUTE_SETTLED')
+ORDER BY created_at ASC;
+
+<<<<<<< HEAD
+23. Reporte resumido por cuenta
+=======
+23. Revisar fecha virtual actual
+
+SELECT *
+FROM virtual_time_t;
+
+23.1. Comparar reloj real vs pin virtual time en eventos
+
+SELECT
+    id,
+    type,
+    entity_type,
+    entity_id,
+    account_id,
+    created_t AS fecha_real_creacion,
+    pin_virtual_time_t AS fecha_virtual_negocio,
+    description
+FROM system_events_t
+ORDER BY created_t ASC;
+
+23.2. Consultar transacciones con fecha real y fecha virtual
+
+SELECT
+    id,
+    account_id,
+    type,
+    amount,
+    currency,
+    created_t AS fecha_real_creacion,
+    pin_virtual_time_t AS fecha_virtual_negocio,
+    description
+FROM account_transactions_t
+ORDER BY created_t ASC;
+
+23.3. Ver operaciones creadas bajo un pin virtual time especifico
+
+SELECT *
+FROM account_transactions_t
+WHERE pin_virtual_time_t BETWEEN '2026-01-01 00:00:00' AND '2026-01-31 23:59:59'
+ORDER BY pin_virtual_time_t ASC;
+
+24. Listar productos activos
+
+SELECT *
+FROM products_t
+WHERE status = 'ACTIVE'
+ORDER BY created_at ASC;
+
+24.1. Listar catalogo de productos telco con Product ID visible
+
+SELECT
+    display_id AS product_id,
+    code,
+    name,
+    description,
+    product_type,
+    billing_frequency,
+    price,
+    currency,
+    status,
+    created_at
+FROM products_t
+ORDER BY created_at ASC;
+
+25. Listar servicios por cuenta
+
+SELECT *
+FROM services_t
+WHERE account_id = 'AQUI_ID_CUENTA'
+ORDER BY created_at ASC;
+
+25.1. Consultar services creados por tipo y estado
+
+SELECT
+    s.id,
+    s.account_id,
+    a.owner_name,
+    s.service_code,
+    s.service_type,
+    s.status,
+    s.activation_date,
+    s.termination_date,
+    s.created_t,
+    s.pin_virtual_time_t
+FROM services_t s
+JOIN accounts_t a ON a.id = s.account_id
+WHERE s.service_type = 'MOBILE'
+  AND s.status = 'ACTIVE'
+ORDER BY s.created_at ASC;
+
+25.2. Consultar services creados con productos asociados
+
+SELECT
+    s.id AS service_id,
+    s.account_id,
+    a.owner_name,
+    s.service_code,
+    s.service_type,
+    s.status AS service_status,
+    p.code AS product_code,
+    p.name AS product_name,
+    sp.status AS product_status,
+    sp.assigned_at
+FROM services_t s
+JOIN accounts_t a ON a.id = s.account_id
+LEFT JOIN service_products_t sp ON sp.service_id = s.id
+LEFT JOIN products_t p ON p.id = sp.product_id
+ORDER BY s.created_at ASC, sp.assigned_at ASC;
+
+26. Listar productos activos por servicio
+
+SELECT
+    sp.id AS service_product_id,
+    s.service_code,
+    p.code AS product_code,
+    p.name AS product_name,
+    p.product_type,
+    p.price,
+    p.billing_frequency,
+    sp.status,
+    sp.assigned_at,
+    sp.last_billed_at,
+    sp.next_bill_at
+FROM service_products_t sp
+JOIN services_t s ON s.id = sp.service_id
+JOIN products_t p ON p.id = sp.product_id
+WHERE sp.service_id = 'AQUI_ID_SERVICIO'
+  AND sp.status = 'ACTIVE'
+ORDER BY sp.assigned_at ASC;
+
+27. Listar billing runs
+
+SELECT *
+FROM billing_runs_t
+ORDER BY started_at DESC;
+
+28. Listar cargos de billing por cuenta
+
+SELECT
+    bc.id,
+    b.bill_no,
+    bi.billing_dom,
+    bi.billing_cycle,
+    TO_CHAR(b.period_start, 'YYYY-MM') ||
+        CASE
+            WHEN TO_CHAR(b.period_start, 'YYYY-MM') = TO_CHAR(b.period_end, 'YYYY-MM')
+            THEN ''
+            ELSE ' a ' || TO_CHAR(b.period_end, 'YYYY-MM')
+        END AS billing_period_label,
+    b.period_start,
+    b.period_end,
+    bc.billing_run_id,
+    bc.account_id,
+    bc.service_id,
+    bc.product_id,
+    p.code AS product_code,
+    bc.charge_type,
+    bc.amount,
+    bc.currency,
+    bc.charge_date,
+    bc.created_t,
+    bc.pin_virtual_time_t,
+    bc.transaction_id
+FROM billing_charges_t bc
+LEFT JOIN bills_t b ON b.id = bc.bill_id
+LEFT JOIN billinfo_t bi ON bi.id = b.billinfo_id
+JOIN products_t p ON p.id = bc.product_id
+WHERE bc.account_id = 'AQUI_ID_CUENTA'
+ORDER BY bc.charge_date ASC;
+
+28.0. Consultar bills por ciclo mensual
+
+SELECT
+    b.bill_no,
+    a.id AS account_id,
+    a.owner_name,
+    bi.billing_dom,
+    bi.billing_cycle,
+    TO_CHAR(b.period_start, 'YYYY-MM') ||
+        CASE
+            WHEN TO_CHAR(b.period_start, 'YYYY-MM') = TO_CHAR(b.period_end, 'YYYY-MM')
+            THEN ''
+            ELSE ' a ' || TO_CHAR(b.period_end, 'YYYY-MM')
+        END AS billing_period_label,
+    b.period_start,
+    b.period_end,
+    b.bill_date,
+    b.due_date,
+    b.total_amount,
+    b.due_amount,
+    b.status
+FROM bills_t b
+JOIN billinfo_t bi ON bi.id = b.billinfo_id
+JOIN accounts_t a ON a.id = b.account_id
+WHERE b.account_id = 'AQUI_ID_CUENTA'
+ORDER BY b.period_start DESC;
+
+28.0.1. Ver bills
+
+SELECT *
+FROM bills_t
+ORDER BY created_at DESC;
+
+28.0.2. Ver bill items
+
+SELECT *
+FROM items_t
+ORDER BY created_at DESC;
+
+28.0.3. Bills por cuenta
+
+SELECT *
+FROM bills_t
+WHERE account_id = 'AQUI_ID_CUENTA'
+ORDER BY period_end DESC;
+
+28.0.4. Detalle de bill
+
+SELECT
+    b.bill_no AS bill_number,
+    b.status,
+    b.period_start,
+    b.period_end,
+    b.total_amount,
+    i.item_type,
+    i.description,
+    i.amount
+FROM bills_t b
+JOIN items_t i ON i.bill_id = b.id
+WHERE b.id = 'AQUI_ID_BILL'
+ORDER BY i.item_date;
+
+28.0.5. Validar numeros de bill duplicados
+
+SELECT
+    bill_no,
+    COUNT(*) AS total
+FROM bills_t
+GROUP BY bill_no
+HAVING COUNT(*) > 1;
+
+28.0.6. Validar duplicados de bill por billing run
+
+SELECT
+    billing_run_id,
+    account_id,
+    COUNT(*) AS total
+FROM bills_t
+WHERE billing_run_id IS NOT NULL
+GROUP BY billing_run_id, account_id
+HAVING COUNT(*) > 1;
+
+28.0.7. Ver secuencias de ids visibles
+
+SELECT *
+FROM id_sequences_t
+ORDER BY sequence_name;
+
+28.0.8. Eventos de bill
+
+SELECT *
+FROM system_events_t
+WHERE type LIKE 'BILL%'
+ORDER BY created_at DESC;
+
+28.1. Consultar items asociados a un bill_no real
+
+-- Reemplaza AQUI_BILL_NO por el valor de bills_t.bill_no.
+-- Cada item nace desde un cargo de billing y queda asociado al bill generado.
+
+SELECT
+    b.bill_no,
+    bi.bill_info_no,
+    a.id AS account_id,
+    a.owner_name,
+    br.run_code AS billing_run_no,
+    br.virtual_time AS billing_virtual_time,
+    i.id AS item_id,
+    i.item_no,
+    i.item_type,
+    i.status AS item_status,
+    i.amount,
+    i.currency,
+    i.item_date,
+    i.created_t AS item_created_t,
+    i.pin_virtual_time_t AS item_pin_virtual_time_t,
+    bc.id AS billing_charge_id,
+    p.code AS product_code,
+    p.name AS product_name,
+    s.service_code,
+    bc.transaction_id
+FROM bills_t b
+JOIN billinfo_t bi ON bi.id = b.billinfo_id
+JOIN accounts_t a ON a.id = b.account_id
+JOIN items_t i ON i.bill_id = b.id
+JOIN billing_charges_t bc ON bc.id = i.billing_charge_id
+JOIN billing_runs_t br ON br.id = bc.billing_run_id
+JOIN products_t p ON p.id = i.product_id
+LEFT JOIN services_t s ON s.id = i.service_id
+WHERE b.bill_no = 'AQUI_BILL_NO'
+ORDER BY i.item_date ASC, i.id ASC;
+
+28.2. Consultar items asociados a un billing run
+
+-- Reemplaza AQUI_BILLING_RUN_NO por el valor de billing_runs_t.run_code.
+
+SELECT
+    br.run_code AS billing_run_no,
+    b.bill_no,
+    i.id AS item_id,
+    i.item_no,
+    i.account_id,
+    p.code AS product_code,
+    p.name AS product_name,
+    i.item_type,
+    i.status,
+    i.amount,
+    i.currency,
+    i.item_date,
+    bc.transaction_id
+FROM billing_runs_t br
+JOIN bills_t b ON b.billing_run_id = br.id
+JOIN items_t i ON i.bill_id = b.id
+JOIN billing_charges_t bc ON bc.id = i.billing_charge_id
+JOIN products_t p ON p.id = i.product_id
+WHERE br.run_code = 'AQUI_BILLING_RUN_NO'
+ORDER BY i.item_date ASC, i.id ASC;
+
+28.3. Consultar billinfo por cuenta
+
+SELECT
+    bi.*,
+    a.owner_name,
+    a.bill_no AS account_bill_no
+FROM billinfo_t bi
+JOIN accounts_t a ON a.id = bi.account_id
+WHERE bi.account_id = 'AQUI_ID_CUENTA';
+
+28.4. Consultar bills por cuenta
+
+SELECT
+    b.*,
+    a.owner_name,
+    br.run_code
+FROM bills_t b
+JOIN accounts_t a ON a.id = b.account_id
+JOIN billing_runs_t br ON br.id = b.billing_run_id
+WHERE b.account_id = 'AQUI_ID_CUENTA'
+ORDER BY b.bill_date DESC;
+
+28.5. Consultar pagos no asignados
+
+SELECT
+    p.id,
+    p.account_id,
+    a.owner_name,
+    p.amount,
+    p.currency,
+    p.allocated_amount,
+    p.unallocated_amount,
+    p.allocation_status,
+    p.payment_method,
+    p.created_t,
+    p.pin_virtual_time_t
+FROM payments_t p
+JOIN accounts_t a ON a.id = p.account_id
+WHERE p.allocation_status = 'UNALLOCATED'
+ORDER BY p.created_at ASC;
+
+28.6. Ver invoices
+
+SELECT *
+FROM invoices_t
+ORDER BY created_at DESC;
+
+28.7. Ver invoice lines
+
+SELECT *
+FROM invoice_lines_t
+ORDER BY created_at DESC;
+
+28.8. Invoices por cuenta
+
+SELECT *
+FROM invoices_t
+WHERE account_id = 'AQUI_ID_CUENTA'
+ORDER BY issue_date DESC;
+
+28.9. Detalle completo de invoice
+
+SELECT
+    i.invoice_number,
+    i.status,
+    i.issue_date,
+    i.due_date,
+    i.subtotal,
+    i.tax_amount,
+    i.total_amount,
+    i.amount_paid,
+    i.amount_due,
+    l.id AS invoice_line_id,
+    l.description,
+    l.line_type,
+    l.quantity,
+    l.unit_amount,
+    l.total_amount AS line_total_amount,
+    p.code AS product_code,
+    s.service_code
+FROM invoices_t i
+JOIN invoice_lines_t l ON l.invoice_id = i.id
+LEFT JOIN products_t p ON p.id = l.product_id
+LEFT JOIN services_t s ON s.id = l.service_id
+WHERE i.id = 'AQUI_ID_INVOICE'
+ORDER BY l.created_at ASC;
+
+28.10. Invoices pendientes
+
+SELECT *
+FROM invoices_t
+WHERE amount_due > 0
+  AND status NOT IN ('PAID', 'CANCELLED')
+ORDER BY due_date ASC;
+
+28.11. Validar invoices duplicadas por billing run y cuenta
+
+SELECT
+    billing_run_id,
+    account_id,
+    COUNT(*) AS total
+FROM invoices_t
+WHERE billing_run_id IS NOT NULL
+GROUP BY billing_run_id, account_id
+HAVING COUNT(*) > 1;
+
+28.12. Total facturado por fecha
+
+SELECT
+    DATE(issue_date) AS issue_day,
+    SUM(total_amount) AS total_invoiced
+FROM invoices_t
+GROUP BY DATE(issue_date)
+ORDER BY issue_day;
+
+28.13. Eventos de invoice
+
+SELECT *
+FROM system_events_t
+WHERE type LIKE 'INVOICE%'
+ORDER BY created_at DESC;
+
+29. Consultar inventario completo
+
+SELECT
+    id,
+    name,
+    description,
+    unit_price,
+    stock_quantity,
+    inventory_value,
+    reorder_level,
+    reorder_time_days,
+    reorder_quantity,
+    available,
+    created_t,
+    pin_virtual_time_t,
+    updated_at,
+    updated_pin_virtual_time_t
+FROM inventory_t
+ORDER BY name ASC;
+
+29.1. Consultar inventario disponible
+
+SELECT *
+FROM inventory_t
+WHERE available = true
+ORDER BY name ASC;
+
+29.2. Consultar items que requieren nuevo pedido
+
+SELECT
+    id,
+    name,
+    stock_quantity,
+    reorder_level,
+    reorder_time_days,
+    reorder_quantity,
+    inventory_value,
+    available
+FROM inventory_t
+WHERE stock_quantity <= reorder_level
+ORDER BY stock_quantity ASC, name ASC;
+
+29.3. Consultar eventos de inventario
+
+SELECT *
+FROM system_events_t
+WHERE type IN (
+    'INVENTORY_ITEM_CREATED',
+    'INVENTORY_ITEM_UPDATED',
+    'INVENTORY_AVAILABILITY_CHANGED'
+)
+ORDER BY created_at ASC;
+
+30. Validar cargos duplicados por producto de servicio
+
+SELECT
+    service_product_id,
+    charge_type,
+    charge_date,
+    COUNT(*) AS total
+FROM billing_charges_t
+GROUP BY service_product_id, charge_type, charge_date
+HAVING COUNT(*) > 1;
+
+31. Revisar eventos de billing
+
+SELECT *
+FROM system_events_t
+WHERE type IN (
+    'BILLING_RUN_STARTED',
+    'BILLING_RUN_COMPLETED',
+    'BILLING_RUN_FAILED',
+    'BILLING_CHARGE_CREATED',
+    'BILLINFO_CREATED',
+    'BILL_CREATED',
+    'ITEM_CREATED'
+)
+ORDER BY created_at ASC;
+
+32. Revisar eventos de productos, servicios, inventario y virtual time
+
+SELECT *
+FROM system_events_t
+WHERE type IN (
+    'VIRTUAL_TIME_UPDATED',
+    'VIRTUAL_TIME_RESET',
+    'PRODUCT_CREATED',
+    'PRODUCT_UPDATED',
+    'PRODUCT_ACTIVATED',
+    'PRODUCT_DEACTIVATED',
+    'SERVICE_CATALOG_CREATED',
+    'SERVICE_CATALOG_UPDATED',
+    'SERVICE_ACTIVATED',
+    'SERVICE_CREATED',
+    'SERVICE_UPDATED',
+    'SERVICE_SUSPENDED',
+    'SERVICE_REACTIVATED',
+    'SERVICE_TERMINATED',
+    'SERVICE_PRODUCT_ASSIGNED',
+    'SERVICE_PRODUCT_CANCELLED',
+    'INVENTORY_ITEM_CREATED',
+    'INVENTORY_ITEM_UPDATED',
+    'INVENTORY_AVAILABILITY_CHANGED'
+)
+ORDER BY created_at ASC;
+
+33. Reporte resumido por cuenta
+>>>>>>> 9a008f4 (Subir proyecto BRMC _v2)
+
+SELECT
+    a.id AS account_id,
+    a.owner_name,
+    a.phone_number,
+    a.email,
+    a.balance,
+    a.currency,
+    a.status,
+    COUNT(DISTINCT p.id) AS total_payments,
+    COUNT(DISTINCT r.id) AS total_refunds,
+    COUNT(DISTINCT w.id) AS total_write_offs,
+    COUNT(DISTINCT s.id) AS total_dispute_settlements,
+<<<<<<< HEAD
+    COUNT(DISTINCT d.id) AS total_disputes
+=======
+    COUNT(DISTINCT d.id) AS total_disputes,
+    COUNT(DISTINCT sv.id) AS total_services,
+    COUNT(DISTINCT bc.id) AS total_billing_charges
+>>>>>>> 9a008f4 (Subir proyecto BRMC _v2)
+FROM accounts_t a
+LEFT JOIN payments_t p ON p.account_id = a.id
+LEFT JOIN refunds_t r ON r.account_id = a.id
+LEFT JOIN write_offs_t w ON w.account_id = a.id
+LEFT JOIN dispute_settlements_t s ON s.account_id = a.id
+LEFT JOIN disputes_t d ON d.account_id = a.id
+<<<<<<< HEAD
+GROUP BY a.id, a.owner_name, a.phone_number, a.email, a.balance, a.currency, a.status
+ORDER BY a.created_at ASC;
+
+24. Totales de pagos, reembolsos, write-offs y settlements por cuenta
+=======
+LEFT JOIN services_t sv ON sv.account_id = a.id
+LEFT JOIN billing_charges_t bc ON bc.account_id = a.id
+GROUP BY a.id, a.owner_name, a.phone_number, a.email, a.balance, a.currency, a.status
+ORDER BY a.created_at ASC;
+
+34. Totales de pagos, reembolsos, write-offs, settlements y billing por cuenta
+>>>>>>> 9a008f4 (Subir proyecto BRMC _v2)
+
+SELECT
+    a.id AS account_id,
+    a.owner_name,
+    COALESCE(SUM(p.amount), 0) AS total_payments_cop,
+    COALESCE(SUM(r.amount), 0) AS total_refunds_cop,
+    COALESCE(SUM(w.amount), 0) AS total_write_offs_cop,
+<<<<<<< HEAD
+    COALESCE(SUM(s.amount), 0) AS total_dispute_settlements_cop
+=======
+    COALESCE(SUM(s.amount), 0) AS total_dispute_settlements_cop,
+    COALESCE(SUM(bc.amount), 0) AS total_billing_charges_cop
+>>>>>>> 9a008f4 (Subir proyecto BRMC _v2)
+FROM accounts_t a
+LEFT JOIN payments_t p ON p.account_id = a.id
+LEFT JOIN refunds_t r ON r.account_id = a.id
+LEFT JOIN write_offs_t w ON w.account_id = a.id
+LEFT JOIN dispute_settlements_t s ON s.account_id = a.id
+<<<<<<< HEAD
+GROUP BY a.id, a.owner_name
+ORDER BY a.id ASC;
+
+25. Crear tabla de settlements si necesitas hacerlo manualmente
+=======
+LEFT JOIN billing_charges_t bc ON bc.account_id = a.id
+GROUP BY a.id, a.owner_name
+ORDER BY a.id ASC;
+
+35. Crear tabla de settlements si necesitas hacerlo manualmente
+>>>>>>> 9a008f4 (Subir proyecto BRMC _v2)
+
+CREATE TABLE IF NOT EXISTS dispute_settlements_t (
+    id varchar(19) PRIMARY KEY,
+    dispute_id varchar(19) NOT NULL REFERENCES disputes_t(id),
+    account_id varchar(14) NOT NULL REFERENCES accounts_t(id),
+    amount numeric(19,2) NOT NULL,
+    currency varchar(3) NOT NULL,
+    note varchar(240) NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL
+);
+
+<<<<<<< HEAD
+26. Migracion opcional: renombrar tablas existentes
+=======
+36. Migracion opcional: renombrar tablas existentes
+>>>>>>> 9a008f4 (Subir proyecto BRMC _v2)
+
+-- Ejecuta esto solo si ya tienes datos en las tablas sin _t y quieres conservarlos.
+-- Recomendacion: hacerlo con la aplicacion detenida y antes de iniciar Spring Boot.
+-- Si Hibernate ya creo las tablas nuevas vacias, revisa primero antes de ejecutar estos comandos.
+
+ALTER TABLE accounts RENAME TO accounts_t;
+ALTER TABLE account_transactions RENAME TO account_transactions_t;
+ALTER TABLE disputes RENAME TO disputes_t;
+ALTER TABLE payments RENAME TO payments_t;
+ALTER TABLE refunds RENAME TO refunds_t;
+ALTER TABLE system_events RENAME TO system_events_t;
+<<<<<<< HEAD
+=======
+
+37. Migracion opcional: agregar columnas de reloj real y pin virtual time manualmente
+
+-- Normalmente Spring Boot/Hibernate las agrega con spring.jpa.hibernate.ddl-auto=update.
+-- Usa esto solo si quieres controlar el cambio manualmente en PostgreSQL.
+
+ALTER TABLE accounts_t ADD COLUMN IF NOT EXISTS created_t timestamp(6) with time zone;
+ALTER TABLE accounts_t ADD COLUMN IF NOT EXISTS pin_virtual_time_t timestamp(6);
+ALTER TABLE accounts_t ADD COLUMN IF NOT EXISTS billing_dom integer;
+ALTER TABLE accounts_t ADD COLUMN IF NOT EXISTS billing_cycle varchar(20);
+ALTER TABLE accounts_t ADD COLUMN IF NOT EXISTS bill_no varchar(40);
+
+ALTER TABLE account_transactions_t ADD COLUMN IF NOT EXISTS created_t timestamp(6) with time zone;
+ALTER TABLE account_transactions_t ADD COLUMN IF NOT EXISTS pin_virtual_time_t timestamp(6);
+
+ALTER TABLE payments_t ADD COLUMN IF NOT EXISTS created_t timestamp(6) with time zone;
+ALTER TABLE payments_t ADD COLUMN IF NOT EXISTS pin_virtual_time_t timestamp(6);
+ALTER TABLE payments_t ADD COLUMN IF NOT EXISTS allocated_amount numeric(19,2);
+ALTER TABLE payments_t ADD COLUMN IF NOT EXISTS unallocated_amount numeric(19,2);
+ALTER TABLE payments_t ADD COLUMN IF NOT EXISTS allocation_status varchar(30);
+
+ALTER TABLE refunds_t ADD COLUMN IF NOT EXISTS created_t timestamp(6) with time zone;
+ALTER TABLE refunds_t ADD COLUMN IF NOT EXISTS pin_virtual_time_t timestamp(6);
+
+ALTER TABLE write_offs_t ADD COLUMN IF NOT EXISTS created_t timestamp(6) with time zone;
+ALTER TABLE write_offs_t ADD COLUMN IF NOT EXISTS pin_virtual_time_t timestamp(6);
+
+ALTER TABLE disputes_t ADD COLUMN IF NOT EXISTS created_t timestamp(6) with time zone;
+ALTER TABLE disputes_t ADD COLUMN IF NOT EXISTS pin_virtual_time_t timestamp(6);
+ALTER TABLE disputes_t ADD COLUMN IF NOT EXISTS resolved_pin_virtual_time_t timestamp(6);
+
+ALTER TABLE dispute_settlements_t ADD COLUMN IF NOT EXISTS created_t timestamp(6) with time zone;
+ALTER TABLE dispute_settlements_t ADD COLUMN IF NOT EXISTS pin_virtual_time_t timestamp(6);
+
+ALTER TABLE products_t ADD COLUMN IF NOT EXISTS created_t timestamp(6) with time zone;
+ALTER TABLE products_t ADD COLUMN IF NOT EXISTS pin_virtual_time_t timestamp(6);
+ALTER TABLE products_t ADD COLUMN IF NOT EXISTS updated_pin_virtual_time_t timestamp(6);
+ALTER TABLE products_t ADD COLUMN IF NOT EXISTS display_id varchar(40);
+
+ALTER TABLE services_t ADD COLUMN IF NOT EXISTS created_t timestamp(6) with time zone;
+ALTER TABLE services_t ADD COLUMN IF NOT EXISTS pin_virtual_time_t timestamp(6);
+
+ALTER TABLE service_products_t ADD COLUMN IF NOT EXISTS created_t timestamp(6) with time zone;
+ALTER TABLE service_products_t ADD COLUMN IF NOT EXISTS pin_virtual_time_t timestamp(6);
+
+ALTER TABLE billing_runs_t ADD COLUMN IF NOT EXISTS created_t timestamp(6) with time zone;
+ALTER TABLE billing_runs_t ADD COLUMN IF NOT EXISTS pin_virtual_time_t timestamp(6);
+
+ALTER TABLE billing_charges_t ADD COLUMN IF NOT EXISTS created_t timestamp(6) with time zone;
+ALTER TABLE billing_charges_t ADD COLUMN IF NOT EXISTS pin_virtual_time_t timestamp(6);
+ALTER TABLE billing_charges_t ADD COLUMN IF NOT EXISTS bill_id varchar(19);
+
+ALTER TABLE invoices_t ADD COLUMN IF NOT EXISTS created_t timestamp(6) with time zone;
+ALTER TABLE invoices_t ADD COLUMN IF NOT EXISTS pin_virtual_time_t timestamp(6);
+
+ALTER TABLE invoice_lines_t ADD COLUMN IF NOT EXISTS created_t timestamp(6) with time zone;
+ALTER TABLE invoice_lines_t ADD COLUMN IF NOT EXISTS pin_virtual_time_t timestamp(6);
+
+ALTER TABLE system_events_t ADD COLUMN IF NOT EXISTS created_t timestamp(6) with time zone;
+ALTER TABLE system_events_t ADD COLUMN IF NOT EXISTS pin_virtual_time_t timestamp(6);
+
+ALTER TABLE virtual_time_t ADD COLUMN IF NOT EXISTS created_t timestamp(6) with time zone;
+ALTER TABLE virtual_time_t ADD COLUMN IF NOT EXISTS pin_virtual_time_t timestamp(6);
+
+ALTER TABLE inventory_t ADD COLUMN IF NOT EXISTS created_t timestamp(6) with time zone;
+ALTER TABLE inventory_t ADD COLUMN IF NOT EXISTS pin_virtual_time_t timestamp(6);
+ALTER TABLE inventory_t ADD COLUMN IF NOT EXISTS updated_pin_virtual_time_t timestamp(6);
+
+CREATE TABLE IF NOT EXISTS id_sequences_t (
+    sequence_name varchar(60) PRIMARY KEY,
+    prefix varchar(20) NOT NULL,
+    current_value bigint NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    updated_at timestamp(6) with time zone NOT NULL
+);
+
+INSERT INTO id_sequences_t (sequence_name, prefix, current_value, created_at, updated_at)
+VALUES
+    ('BILL', 'B1-', 100, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('INVOICE', 'INV-', 100, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('PRODUCT', 'PRD-', 100, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('SERVICE', 'SVC-', 100, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('BILLING_RUN', 'BR-', 100, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('PAYMENT', 'PAY-', 100, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('REFUND', 'REF-', 100, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('WRITEOFF', 'WO-', 100, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+    ('DISPUTE', 'DSP-', 100, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT (sequence_name) DO NOTHING;
+
+38. Migracion opcional: crear tablas billinfo, bills e items manualmente
+
+-- Normalmente Hibernate crea estas tablas al iniciar la aplicacion.
+-- Usa este bloque solo si prefieres controlar la estructura desde PostgreSQL.
+
+CREATE TABLE IF NOT EXISTS billinfo_t (
+    id varchar(19) PRIMARY KEY,
+    account_id varchar(14) NOT NULL UNIQUE REFERENCES accounts_t(id),
+    bill_info_no varchar(60) NOT NULL UNIQUE,
+    billing_dom integer NOT NULL,
+    billing_cycle varchar(20) NOT NULL,
+    currency varchar(3) NOT NULL,
+    status varchar(20) NOT NULL,
+    last_bill_at timestamp(6),
+    next_bill_at timestamp(6),
+    created_at timestamp(6) with time zone NOT NULL,
+    created_t timestamp(6) with time zone,
+    pin_virtual_time_t timestamp(6)
+);
+
+CREATE TABLE IF NOT EXISTS bills_t (
+    id varchar(19) PRIMARY KEY,
+    bill_no varchar(80) NOT NULL UNIQUE,
+    account_id varchar(14) NOT NULL REFERENCES accounts_t(id),
+    billinfo_id varchar(19) NOT NULL REFERENCES billinfo_t(id),
+    billing_run_id varchar(19) NOT NULL REFERENCES billing_runs_t(id),
+    status varchar(20) NOT NULL,
+    period_start timestamp(6) NOT NULL,
+    period_end timestamp(6) NOT NULL,
+    bill_date timestamp(6) NOT NULL,
+    due_date timestamp(6) NOT NULL,
+    currency varchar(3) NOT NULL,
+    total_amount numeric(19,2) NOT NULL,
+    paid_amount numeric(19,2) NOT NULL,
+    due_amount numeric(19,2) NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    created_t timestamp(6) with time zone,
+    pin_virtual_time_t timestamp(6)
+);
+
+CREATE TABLE IF NOT EXISTS items_t (
+    id varchar(19) PRIMARY KEY,
+    item_no varchar(80) NOT NULL UNIQUE,
+    bill_id varchar(19) NOT NULL REFERENCES bills_t(id),
+    billing_charge_id varchar(19) NOT NULL UNIQUE REFERENCES billing_charges_t(id),
+    account_id varchar(14) NOT NULL REFERENCES accounts_t(id),
+    service_id varchar(19) REFERENCES services_t(id),
+    product_id varchar(19) NOT NULL REFERENCES products_t(id),
+    item_type varchar(20) NOT NULL,
+    status varchar(20) NOT NULL,
+    amount numeric(19,2) NOT NULL,
+    currency varchar(3) NOT NULL,
+    item_date timestamp(6) NOT NULL,
+    description varchar(500) NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    created_t timestamp(6) with time zone,
+    pin_virtual_time_t timestamp(6)
+);
+
+39. Migracion opcional: crear tabla de inventario manualmente
+
+-- Normalmente Hibernate crea esta tabla al iniciar la aplicacion.
+
+CREATE TABLE IF NOT EXISTS inventory_t (
+    id varchar(24) PRIMARY KEY,
+    name varchar(160) NOT NULL,
+    description varchar(500),
+    unit_price numeric(19,2) NOT NULL,
+    stock_quantity integer NOT NULL,
+    inventory_value numeric(19,2) NOT NULL,
+    reorder_level integer NOT NULL,
+    reorder_time_days integer NOT NULL,
+    reorder_quantity integer NOT NULL,
+    available boolean NOT NULL,
+    created_at timestamp(6) with time zone NOT NULL,
+    created_t timestamp(6) with time zone,
+    pin_virtual_time_t timestamp(6),
+    updated_at timestamp(6) with time zone NOT NULL,
+    updated_pin_virtual_time_t timestamp(6)
+);
+
+40. Migracion opcional: crear tablas de invoices manualmente
+
+-- Normalmente Hibernate crea estas tablas al iniciar la aplicacion.
+
+CREATE TABLE IF NOT EXISTS invoices_t (
+    id varchar(19) PRIMARY KEY,
+    invoice_number varchar(80) NOT NULL UNIQUE,
+    account_id varchar(14) NOT NULL REFERENCES accounts_t(id),
+    billing_run_id varchar(19) REFERENCES billing_runs_t(id),
+    status varchar(20) NOT NULL,
+    invoice_type varchar(20) NOT NULL,
+    currency varchar(3) NOT NULL,
+    subtotal numeric(19,2) NOT NULL,
+    tax_amount numeric(19,2) NOT NULL,
+    total_amount numeric(19,2) NOT NULL,
+    amount_paid numeric(19,2) NOT NULL,
+    amount_due numeric(19,2) NOT NULL,
+    issue_date timestamp(6) NOT NULL,
+    due_date timestamp(6) NOT NULL,
+    period_start timestamp(6),
+    period_end timestamp(6),
+    generated_at timestamp(6) NOT NULL,
+    generated_by varchar(120),
+    sent_at timestamp(6),
+    paid_at timestamp(6),
+    cancelled_at timestamp(6),
+    notes varchar(1000),
+    created_at timestamp(6) with time zone NOT NULL,
+    created_t timestamp(6) with time zone,
+    pin_virtual_time_t timestamp(6),
+    updated_at timestamp(6) with time zone,
+    CONSTRAINT uk_invoices_t_run_account UNIQUE (billing_run_id, account_id)
+);
+
+CREATE TABLE IF NOT EXISTS invoice_lines_t (
+    id varchar(19) PRIMARY KEY,
+    invoice_id varchar(19) NOT NULL REFERENCES invoices_t(id),
+    billing_charge_id varchar(19) REFERENCES billing_charges_t(id),
+    account_id varchar(14) NOT NULL REFERENCES accounts_t(id),
+    service_id varchar(19) REFERENCES services_t(id),
+    product_id varchar(19) REFERENCES products_t(id),
+    line_type varchar(20) NOT NULL,
+    description varchar(500),
+    quantity numeric(19,2) NOT NULL,
+    unit_amount numeric(19,2) NOT NULL,
+    subtotal numeric(19,2) NOT NULL,
+    tax_amount numeric(19,2) NOT NULL,
+    total_amount numeric(19,2) NOT NULL,
+    currency varchar(3) NOT NULL,
+    charge_date timestamp(6),
+    created_at timestamp(6) with time zone NOT NULL,
+    created_t timestamp(6) with time zone,
+    pin_virtual_time_t timestamp(6)
+);
+
+41. Migracion opcional: completar pagos historicos como no asignados
+
+-- Ejecuta esto si ya tenias pagos antes de agregar Unallocated Payments.
+
+UPDATE payments_t
+SET allocated_amount = COALESCE(allocated_amount, 0),
+    unallocated_amount = COALESCE(unallocated_amount, amount),
+    allocation_status = COALESCE(allocation_status, 'UNALLOCATED');
+
+42. Migracion opcional: crear billinfo para cuentas historicas
+
+-- Ejecuta esto si quieres poblar billinfo_t para cuentas creadas antes de esta version.
+
+INSERT INTO billinfo_t (
+    id,
+    account_id,
+    bill_info_no,
+    billing_dom,
+    billing_cycle,
+    currency,
+    status,
+    next_bill_at,
+    created_at,
+    created_t,
+    pin_virtual_time_t
+)
+SELECT
+    'BI-' || a.id,
+    a.id,
+    'BILLINFO-' || a.id,
+    COALESCE(a.billing_dom, EXTRACT(DAY FROM COALESCE(a.pin_virtual_time_t, CURRENT_TIMESTAMP))::integer),
+    COALESCE(a.billing_cycle, 'MONTHLY'),
+    COALESCE(a.currency, 'COP'),
+    'ACTIVE',
+    a.pin_virtual_time_t,
+    COALESCE(a.created_at, CURRENT_TIMESTAMP),
+    COALESCE(a.created_t, a.created_at, CURRENT_TIMESTAMP),
+    a.pin_virtual_time_t
+FROM accounts_t a
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM billinfo_t bi
+    WHERE bi.account_id = a.id
+);
+
+43. Migracion opcional: actualizar CHECK de eventos en PostgreSQL
+
+-- Ejecuta esto si la creacion de cuentas falla al registrar BILLINFO_CREATED.
+-- La aplicacion ya intenta hacerlo automaticamente al iniciar, pero esta consulta sirve para
+-- corregir la base manualmente si el usuario de PostgreSQL no tiene permisos de ALTER TABLE.
+
+DO $$
+DECLARE
+    constraint_record record;
+BEGIN
+    FOR constraint_record IN
+        SELECT nsp.nspname, rel.relname, con.conname
+        FROM pg_constraint con
+        JOIN pg_class rel ON rel.oid = con.conrelid
+        JOIN pg_namespace nsp ON nsp.oid = rel.relnamespace
+        WHERE rel.relname = 'system_events_t'
+          AND con.contype = 'c'
+          AND pg_get_constraintdef(con.oid) ILIKE '%type%'
+    LOOP
+        EXECUTE format(
+            'ALTER TABLE %I.%I DROP CONSTRAINT %I',
+            constraint_record.nspname,
+            constraint_record.relname,
+            constraint_record.conname
+        );
+    END LOOP;
+END $$;
+
+ALTER TABLE system_events_t
+ADD CONSTRAINT system_events_t_type_check
+CHECK (type IN (
+    'ACCOUNT_CREATED',
+    'PAYMENT_RECEIVED',
+    'UNALLOCATED_PAYMENT_CREATED',
+    'REFUND_SENT',
+    'WRITE_OFF_APPLIED',
+    'ACCOUNT_CLOSED',
+    'DISPUTE_CREATED',
+    'DISPUTE_SETTLEMENT_CREATED',
+    'DISPUTE_SETTLED',
+    'DISPUTE_APPROVED',
+    'DISPUTE_REJECTED',
+    'VIRTUAL_TIME_UPDATED',
+    'VIRTUAL_TIME_RESET',
+    'PRODUCT_CREATED',
+    'PRODUCT_UPDATED',
+    'PRODUCT_ACTIVATED',
+    'PRODUCT_DEACTIVATED',
+    'SERVICE_CATALOG_CREATED',
+    'SERVICE_CATALOG_UPDATED',
+    'SERVICE_ACTIVATED',
+    'SERVICE_CREATED',
+    'SERVICE_UPDATED',
+    'SERVICE_SUSPENDED',
+    'SERVICE_REACTIVATED',
+    'SERVICE_TERMINATED',
+    'SERVICE_PRODUCT_ASSIGNED',
+    'SERVICE_PRODUCT_CANCELLED',
+    'BILLING_RUN_STARTED',
+    'BILLING_RUN_COMPLETED',
+    'BILLING_RUN_FAILED',
+    'BILLING_CHARGE_CREATED',
+    'BILLINFO_CREATED',
+    'BILL_CREATED',
+    'ITEM_CREATED',
+    'BILL_ITEM_CREATED',
+    'INVENTORY_ITEM_CREATED',
+    'INVENTORY_ITEM_UPDATED',
+    'INVENTORY_AVAILABILITY_CHANGED',
+    'INVOICE_GENERATED',
+    'INVOICE_LINE_CREATED',
+    'INVOICE_SENT',
+    'INVOICE_CANCELLED',
+    'INVOICE_PAID',
+    'INVOICE_PARTIALLY_PAID',
+    'CREDIT_NOTE_CREATED',
+    'CREDIT_NOTE_LINE_CREATED',
+    'CREDIT_NOTE_APPLIED',
+'CREDIT_NOTE_CANCELLED'
+));
+
+44. Consultas de notas de credito
+
+-- Ver notas de credito:
+select * from credit_notes_t order by created_at desc;
+
+-- Ver lineas de notas de credito:
+select * from credit_note_lines_t order by created_at desc;
+
+-- Notas de credito por invoice:
+select * from credit_notes_t where invoice_id = ? order by issue_date desc;
+
+-- Detalle de nota de credito:
+select cn.credit_note_number, cn.status, cn.total_amount, cn.reason,
+       cnl.description, cnl.amount
+from credit_notes_t cn
+join credit_note_lines_t cnl on cnl.credit_note_id = cn.id
+where cn.id = ?;
+
+-- Ver creditos aplicados a invoices:
+select invoice_number, status, total_amount, amount_paid, credit_amount, amount_due
+from invoices_t
+order by issue_date desc;
+
+-- Eventos de notas de credito:
+select * from system_events_t
+where type like 'CREDIT_NOTE%'
+order by created_at desc;
+>>>>>>> 9a008f4 (Subir proyecto BRMC _v2)
