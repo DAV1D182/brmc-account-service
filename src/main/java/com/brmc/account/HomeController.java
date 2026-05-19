@@ -380,6 +380,7 @@ class HomeController {
                         <a class="secondary" href="/payments">Registrar pago</a>
                         <a href="/products">Crear producto</a>
                         <a class="secondary" href="/billing">Ejecutar billing</a>
+                        <a href="/entel">ENTEL</a>
                         <a class="muted" href="/events">Ver eventos</a>
                     </div>
                 </section>
@@ -476,6 +477,14 @@ class HomeController {
                         <p>Gestiona existencias, valor de inventario, disponibilidad y niveles de nuevo pedido.</p>
                         <div class="actions">
                             <a class="secondary" href="/inventory">Gestionar inventario</a>
+                        </div>
+                    </article>
+                    <article class="module">
+                        <span class="bc-module-meta">ENTEL operations</span>
+                        <h2>ENTEL</h2>
+                        <p>Genera archivos TXT para cambio de numero por NAP o carga ILE.</p>
+                        <div class="actions">
+                            <a class="secondary" href="/entel">Generar TXT ENTEL</a>
                         </div>
                     </article>
                     %s
@@ -3242,6 +3251,135 @@ class HomeController {
     }
 
     /**
+     * Renderiza el generador de archivos ENTEL para cambio de numero.
+     *
+     * @return pagina HTML con formulario y descarga local de TXT.
+     */
+    @GetMapping(value = "/entel", produces = MediaType.TEXT_HTML_VALUE)
+    String entel() {
+        return page("ENTEL", """
+                <p>Genera un TXT con bloque NAP y linea ILE para solicitud de cambio de numero.</p>
+                <div class="toolbar">
+                    <a class="muted" href="/">Volver al dashboard</a>
+                </div>
+                <form id="entelForm">
+                    <label>
+                        CUENTA_PAGADORA
+                        <input id="accountNo" name="accountNo" type="text" placeholder="02049903" required autofocus>
+                    </label>
+                    <label>
+                        PIN_FLD_PROGRAM_NAME / Nombre del programa solicitante
+                        <input id="programName" name="programName" type="text" value="EXT_OP_CUST_POL_CHANGE_NUMBER">
+                    </label>
+                    <label>
+                        NUMERO_ACTUAL
+                        <input id="currentNumber" name="currentNumber" type="text" placeholder="02049903_NUMERO" required>
+                    </label>
+                    <label>
+                        NUMERO_NUEVO_LIBRE
+                        <input id="newNumber" name="newNumber" type="text" placeholder="02049903_NUMERO2" required>
+                    </label>
+                    <label>
+                        IMEI para ILE (opcional)
+                        <input id="imei" name="imei" type="text" placeholder="Si queda vacio se genera CUENTA_PAGADORA_imei">
+                    </label>
+                    <button type="submit">Descargar TXT ENTEL</button>
+                </form>
+                <section id="result"></section>
+                <script>
+                    const DEFAULT_PROGRAM_NAME = "EXT_OP_CUST_POL_CHANGE_NUMBER";
+
+                    function message(type, text) {
+                        return `<p class='message ${type}'>${text}</p>`;
+                    }
+
+                    function valueOf(id) {
+                        return document.getElementById(id).value.trim();
+                    }
+
+                    function sanitizedFilePart(value) {
+                        return value.replace(/[^a-zA-Z0-9_-]+/g, "_").replace(/^_+|_+$/g, "") || "entel";
+                    }
+
+                    function escapeNap(value) {
+                        return value.replace(/\\\\/g, "\\\\\\\\").replace(/"/g, '\\\\"');
+                    }
+
+                    function buildTxt() {
+                        const accountNo = valueOf("accountNo");
+                        const programName = valueOf("programName") || DEFAULT_PROGRAM_NAME;
+                        const currentNumber = valueOf("currentNumber");
+                        const newNumber = valueOf("newNumber");
+                        const imei = valueOf("imei") || `${accountNo}_imei`;
+
+                        if (!accountNo || !currentNumber || !newNumber) {
+                            throw new Error("Debe diligenciar CUENTA_PAGADORA, NUMERO_ACTUAL y NUMERO_NUEVO_LIBRE.");
+                        }
+
+                        const nap = [
+                            "1. NAP:",
+                            "",
+                            "r << XXX 1",
+                            "0 PIN_FLD_POID           POID [0] 0.0.0.1 /service/telco/gsm -1 0",
+                            `0 PIN_FLD_ACCOUNT_NO      STR [0] "${escapeNap(accountNo)}"`,
+                            `0 PIN_FLD_PROGRAM_NAME    STR [0] "${escapeNap(programName)}"`,
+                            `0 PIN_FLD_LOGIN           STR [0] "${escapeNap(currentNumber)}"`,
+                            `0 PIN_FLD_NEW_LOGIN       STR [0] "${escapeNap(newNumber)}"`,
+                            "XXX",
+                            "xop 20005 0 1"
+                        ].join("\\r\\n");
+
+                        const ile = [
+                            "2. ILE:",
+                            "",
+                            "#ACCOUNT_NO;Nombre_del_programa_solicitante;Número_actual;Nuevo_número;IMEI",
+                            `${accountNo};${programName};${currentNumber};${newNumber};${imei}`
+                        ].join("\\r\\n");
+
+                        return {
+                            accountNo,
+                            currentNumber,
+                            newNumber,
+                            content: `${nap}\\r\\n\\r\\n${ile}\\r\\n`
+                        };
+                    }
+
+                    function renderPreview(content) {
+                        document.getElementById("result").innerHTML = `
+                            ${message("success", "TXT ENTEL generado correctamente.")}
+                            <h2>Vista previa</h2>
+                            <pre style="white-space: pre-wrap; border: 1px solid #dbe3ea; border-radius: 8px; padding: 16px; background: #f8fafc;">${content.replace(/[&<>]/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[char]))}</pre>
+                        `;
+                    }
+
+                    function downloadTxt(fileName, content) {
+                        const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+                        const url = URL.createObjectURL(blob);
+                        const link = document.createElement("a");
+                        link.href = url;
+                        link.download = fileName;
+                        document.body.appendChild(link);
+                        link.click();
+                        link.remove();
+                        URL.revokeObjectURL(url);
+                    }
+
+                    document.getElementById("entelForm").addEventListener("submit", function (event) {
+                        event.preventDefault();
+                        try {
+                            const generated = buildTxt();
+                            const fileName = `entel_change_number_${sanitizedFilePart(generated.accountNo)}_${sanitizedFilePart(generated.currentNumber)}_to_${sanitizedFilePart(generated.newNumber)}.txt`;
+                            renderPreview(generated.content);
+                            downloadTxt(fileName, generated.content);
+                        } catch (error) {
+                            document.getElementById("result").innerHTML = message("error", error.message);
+                        }
+                    });
+                </script>
+                """);
+    }
+
+    /**
      * Renderiza la vista global de servicios.
      *
      * @return pagina HTML de consulta de servicios y productos asociados.
@@ -5137,6 +5275,7 @@ class HomeController {
                                 <a href="/invoices">Invoices</a>
                                 <a href="/virtual-time">Virtual Time</a>
                                 <a href="/inventory">Inventory</a>
+                                <a href="/entel">ENTEL</a>
                                 <a href="/reports">Reports</a>
                                 <a href="/events">Events</a>
                                 %s

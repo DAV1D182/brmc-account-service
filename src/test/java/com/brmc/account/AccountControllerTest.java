@@ -111,6 +111,7 @@ class AccountControllerTest {
                 .andExpect(content().string(containsString("Reportes")))
                 .andExpect(content().string(containsString("Inventario")))
                 .andExpect(content().string(containsString("Consultar services creados")))
+                .andExpect(content().string(containsString("ENTEL")))
                 .andExpect(content().string(containsString("Eventos")));
 
         mockMvc.perform(get("/accounts/new"))
@@ -130,6 +131,14 @@ class AccountControllerTest {
                 .andExpect(content().string(containsString("Ciclo facturacion")))
                 .andExpect(content().string(containsString("Ver detalle")))
                 .andExpect(content().string(containsString("target=\"_blank\"")));
+
+        mockMvc.perform(get("/entel"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("CUENTA_PAGADORA")))
+                .andExpect(content().string(containsString("PIN_FLD_PROGRAM_NAME")))
+                .andExpect(content().string(containsString("NUMERO_ACTUAL")))
+                .andExpect(content().string(containsString("NUMERO_NUEVO_LIBRE")))
+                .andExpect(content().string(containsString("Descargar TXT ENTEL")));
     }
 
     @Test
