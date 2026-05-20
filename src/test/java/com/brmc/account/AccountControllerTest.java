@@ -142,6 +142,10 @@ class AccountControllerTest {
                 .andExpect(content().string(containsString("NUMERO_NUEVO_LIBRE")))
                 .andExpect(content().string(containsString("Descargar TXT ENTEL")))
                 .andExpect(content().string(containsString("EXT_OP_CUST_POL_CHANGE_NUMBER")))
+                .andExpect(content().string(containsString("EXT_OP_CUST_POL_ADD_ASSET")))
+                .andExpect(content().string(containsString("Descargar NAP o IEL")))
+                .andExpect(content().string(containsString("SERVICE_TYPE")))
+                .andExpect(content().string(containsString("PIN_FLD_AAC_PACKAGE")))
                 .andExpect(content().string(containsString("Generar PODL")))
                 .andExpect(content().string(containsString("/api/entel/podl")))
                 .andExpect(content().string(containsString("PODL_template_BRMC.xlsx")));

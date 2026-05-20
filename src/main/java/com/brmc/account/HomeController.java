@@ -3264,6 +3264,7 @@ class HomeController {
                 </div>
                 <div class="bc-operation-switch" role="tablist" aria-label="Operaciones ENTEL">
                     <button type="button" class="bc-operation-tab active" data-panel="changeNumberPanel">EXT_OP_CUST_POL_CHANGE_NUMBER</button>
+                    <button type="button" class="bc-operation-tab" data-panel="addAssetPanel">EXT_OP_CUST_POL_ADD_ASSET</button>
                     <button type="button" class="bc-operation-tab" data-panel="podlPanel">Generar PODL</button>
                 </div>
                 <section id="changeNumberPanel" class="entel-operation-panel active">
@@ -3295,6 +3296,63 @@ class HomeController {
                 </form>
                     </div>
                     <section id="changeNumberResult"></section>
+                </section>
+                <section id="addAssetPanel" class="entel-operation-panel">
+                    <div class="bc-operation-panel">
+                        <h2>EXT_OP_CUST_POL_ADD_ASSET</h2>
+                        <p class="bc-time-note">Genera un archivo NAP o IEL para comprar/crear un asset de servicio. Selecciona una sola salida por descarga.</p>
+                        <form id="addAssetForm" class="bc-inline-form">
+                            <label>
+                                Tipo de archivo
+                                <select id="addAssetOutputType" name="outputType" required>
+                                    <option value="NAP">NAP</option>
+                                    <option value="IEL">IEL</option>
+                                </select>
+                            </label>
+                            <label>
+                                ACCOUNT_NO / Cuenta pagadora
+                                <input id="addAssetAccountNo" name="accountNo" type="text" placeholder=".700003.3" required>
+                            </label>
+                            <label>
+                                SERVICE_TYPE
+                                <select id="addAssetServiceType" name="serviceType" required>
+                                    <option value="/service/device">/service/device</option>
+                                    <option value="/service/telco/gsm">/service/telco/gsm</option>
+                                    <option value="/service/telephony">/service/telephony</option>
+                                    <option value="/service/other">/service/other</option>
+                                    <option value="/service/pcm_client">/service/pcm_client</option>
+                                    <option value="/service/admin_client">/service/admin_client</option>
+                                    <option value="/service/device_installment">/service/device_installment</option>
+                                </select>
+                            </label>
+                            <label>
+                                PIN_FLD_PROGRAM_NAME / PROGRAM_NAME
+                                <input id="addAssetProgramName" name="programName" type="text" value="Testnap" required>
+                            </label>
+                            <label>
+                                PIN_FLD_LOGIN / LOGIN
+                                <input id="addAssetLogin" name="login" type="text" placeholder="56912345678" required>
+                            </label>
+                            <label>
+                                IMEI (opcional)
+                                <input id="addAssetImei" name="imei" type="text" placeholder="123456789012345">
+                            </label>
+                            <label>
+                                PLAN_MIGRABLE / PIN_FLD_AAC_PACKAGE
+                                <select id="addAssetPlanMigrable" name="planMigrable">
+                                    <option value="0">0 - No migrable</option>
+                                    <option value="1">1 - Migrable</option>
+                                </select>
+                            </label>
+                            <button type="submit">Descargar NAP o IEL</button>
+                        </form>
+                        <ul class="bc-helper-list">
+                            <li>NAP usa el opcode EXT_OP_CUST_POL_ADD_ASSET con POID del tipo de servicio seleccionado.</li>
+                            <li>IEL genera una sola linea con ACCOUNT_NO;SERVICE_TYPE;PROGRAM_NAME;LOGIN;IMEI;PLAN_MIGRABLE.</li>
+                            <li>Si IMEI queda vacio, el NAP omite PIN_FLD_IMEI y el IEL deja la columna vacia.</li>
+                        </ul>
+                    </div>
+                    <section id="addAssetResult"></section>
                 </section>
                 <section id="podlPanel" class="entel-operation-panel">
                     <div class="bc-operation-panel">
@@ -3334,6 +3392,7 @@ class HomeController {
                 </section>
                 <script>
                     const DEFAULT_PROGRAM_NAME = "EXT_OP_CUST_POL_CHANGE_NUMBER";
+                    const ADD_ASSET_OPCODE = "EXT_OP_CUST_POL_ADD_ASSET";
 
                     function message(type, text) {
                         return `<p class='message ${type}'>${text}</p>`;
@@ -3394,6 +3453,53 @@ class HomeController {
                         };
                     }
 
+                    function buildAddAsset() {
+                        const outputType = valueOf("addAssetOutputType");
+                        const accountNo = valueOf("addAssetAccountNo");
+                        const serviceType = valueOf("addAssetServiceType");
+                        const programName = valueOf("addAssetProgramName");
+                        const login = valueOf("addAssetLogin");
+                        const imei = valueOf("addAssetImei");
+                        const planMigrable = valueOf("addAssetPlanMigrable") || "0";
+
+                        if (!accountNo || !serviceType || !programName || !login) {
+                            throw new Error("Debe diligenciar ACCOUNT_NO, SERVICE_TYPE, PROGRAM_NAME y LOGIN.");
+                        }
+
+                        if (outputType === "IEL") {
+                            return {
+                                outputType,
+                                accountNo,
+                                login,
+                                content: [
+                                    "# Cuenta_a_la_que_se_asignara_el_servicio;Tipo_servicio_a_crear;Nombre_del_programa_solicitante;Login_servicio_Numero_linea;IMEI;Plan_migrable",
+                                    `${accountNo};${serviceType};${programName};${login};${imei};${planMigrable}`
+                                ].join("\\r\\n") + "\\r\\n"
+                            };
+                        }
+
+                        const napLines = [
+                            "r << EOF 1",
+                            `0 PIN_FLD_POID                          POID [0] 0.0.0.1 ${serviceType} -1 0`,
+                            `0 PIN_FLD_ACCOUNT_NO            STR [0] "${escapeNap(accountNo)}"`,
+                            `0 PIN_FLD_PROGRAM_NAME          STR [0] "${escapeNap(programName)}"`,
+                            `0 PIN_FLD_LOGIN                         STR [0] "${escapeNap(login)}"`
+                        ];
+                        if (imei) {
+                            napLines.push(`0 PIN_FLD_IMEI                          STR [0] "${escapeNap(imei)}"`);
+                        }
+                        napLines.push(`0 PIN_FLD_AAC_PACKAGE               ENUM [0] ${planMigrable}`);
+                        napLines.push("EOF");
+                        napLines.push(`xop ${ADD_ASSET_OPCODE} 0 1`);
+
+                        return {
+                            outputType,
+                            accountNo,
+                            login,
+                            content: napLines.join("\\r\\n") + "\\r\\n"
+                        };
+                    }
+
                     function renderPreview(targetId, successMessage, content) {
                         document.getElementById(targetId).innerHTML = `
                             ${message("success", successMessage)}
@@ -3444,6 +3550,19 @@ class HomeController {
                             downloadText(fileName, generated.content);
                         } catch (error) {
                             document.getElementById("changeNumberResult").innerHTML = message("error", error.message);
+                        }
+                    });
+
+                    document.getElementById("addAssetForm").addEventListener("submit", function (event) {
+                        event.preventDefault();
+                        try {
+                            const generated = buildAddAsset();
+                            const extension = generated.outputType === "IEL" ? "iel" : "nap";
+                            const fileName = `entel_add_asset_${generated.outputType.toLowerCase()}_${sanitizedFilePart(generated.accountNo)}_${sanitizedFilePart(generated.login)}.${extension}`;
+                            renderPreview("addAssetResult", `${generated.outputType} ADD_ASSET generado correctamente.`, generated.content);
+                            downloadText(fileName, generated.content);
+                        } catch (error) {
+                            document.getElementById("addAssetResult").innerHTML = message("error", error.message);
                         }
                     });
 
