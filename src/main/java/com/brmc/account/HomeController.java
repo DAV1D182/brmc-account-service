@@ -3265,13 +3265,22 @@ class HomeController {
                 <div class="bc-operation-switch" role="tablist" aria-label="Operaciones ENTEL">
                     <button type="button" class="bc-operation-tab active" data-panel="changeNumberPanel">EXT_OP_CUST_POL_CHANGE_NUMBER</button>
                     <button type="button" class="bc-operation-tab" data-panel="addAssetPanel">EXT_OP_CUST_POL_ADD_ASSET</button>
+                    <button type="button" class="bc-operation-tab" data-panel="createCaPanel">EXT_OP_CUST_POL_CREATE_CA</button>
+                    <button type="button" class="bc-operation-tab" data-panel="createBaPanel">EXT_OP_CUST_POL_CREATE_BA</button>
                     <button type="button" class="bc-operation-tab" data-panel="podlPanel">Generar PODL</button>
                 </div>
                 <section id="changeNumberPanel" class="entel-operation-panel active">
                     <div class="bc-operation-panel">
                         <h2>EXT_OP_CUST_POL_CHANGE_NUMBER</h2>
-                        <p class="bc-time-note">Genera un TXT con bloque NAP y linea ILE para solicitud de cambio de numero.</p>
+                        <p class="bc-time-note">Genera un archivo NAP o IEL para solicitud de cambio de numero. Selecciona una sola salida por descarga.</p>
                 <form id="entelForm" class="bc-inline-form">
+                    <label>
+                        Tipo de archivo
+                        <select id="changeNumberOutputType" name="outputType" required>
+                            <option value="NAP">NAP</option>
+                            <option value="IEL">IEL</option>
+                        </select>
+                    </label>
                     <label>
                         CUENTA_PAGADORA
                         <input id="accountNo" name="accountNo" type="text" placeholder="02049903" required autofocus>
@@ -3292,8 +3301,13 @@ class HomeController {
                         IMEI para ILE (opcional)
                         <input id="imei" name="imei" type="text" placeholder="Si queda vacio se genera CUENTA_PAGADORA_imei">
                     </label>
-                    <button type="submit">Descargar TXT ENTEL</button>
+                    <button type="submit">Descargar NAP o IEL</button>
                 </form>
+                        <ul class="bc-helper-list">
+                            <li>NAP genera solo el flist con xop 20005 para cambio de numero.</li>
+                            <li>IEL genera solo la linea ACCOUNT_NO;PROGRAM_NAME;NUMERO_ACTUAL;NUMERO_NUEVO;IMEI.</li>
+                            <li>Si IMEI queda vacio en IEL, se usa CUENTA_PAGADORA_imei.</li>
+                        </ul>
                     </div>
                     <section id="changeNumberResult"></section>
                 </section>
@@ -3353,6 +3367,151 @@ class HomeController {
                         </ul>
                     </div>
                     <section id="addAssetResult"></section>
+                </section>
+                <section id="createCaPanel" class="entel-operation-panel">
+                    <div class="bc-operation-panel">
+                        <h2>EXT_OP_CUST_POL_CREATE_CA</h2>
+                        <p class="bc-time-note">Cuenta cliente. El NAP queda precargado y editable antes de descargar.</p>
+                        <p class="bc-important-note">Importante: cambia PIN_FLD_ACCOUNT_NO antes de ejecutar este opcode.</p>
+                        <form id="createCaForm" class="bc-inline-form">
+                            <label>
+                                PIN_FLD_ACCOUNT_NO
+                                <input id="createCaAccountNo" name="accountNo" type="text" value="02049901" required>
+                            </label>
+                            <label class="wide-field">
+                                NAP editable
+                                <textarea id="createCaTemplate" class="bc-template-area" spellcheck="false">r << EOF 1
+0 PIN_FLD_POID           POID [0] 0.0.0.1 /account -1 0
+0 PIN_FLD_PROGRAM_NAME    STR [0] "Create Account API REST"
+0 PIN_FLD_USER_NAME       STR [0] "RAV NAP"
+0 PIN_FLD_ACCTINFO      ARRAY [0] allocated 20, used 13
+1   PIN_FLD_CURRENCY        INT [0] 152
+1   PIN_FLD_ACCOUNT_NO      STR [0] "02049901"
+1   PIN_FLD_AAC_SOURCE      STR [0] "CTA-CLI"
+1   PIN_FLD_AAC_VENDOR      STR [0] "Cuenta Cliente"
+1   PIN_FLD_LOCALE          STR [0] "es_CL"
+1   EXT_FLD_BUSINESS_ACTIVITY           STR [0] "0115"
+1   EXT_FLD_SEGMENT                     STR [0] "C"
+1   EXT_FLD_CUST_CLASSIFICATION         STR [0] "Corporate"
+1   EXT_FLD_CUST_SUB_CLASSIFICATION     STR [0] "Corporate-001"
+1   EXT_FLD_DOC_TYPE                    STR [0] "RUT"
+1   EXT_FLD_DOC_NO                      STR [0] "700001"
+1   EXT_FLD_RISK_LEVEL                  STR [0] "Bajo"
+1   EXT_FLD_VIP_FLAG                    ENUM [0] 0
+1   EXT_FLD_HOLDING                     STR [0] "D001"
+1   EXT_FLD_INTERCOMPANY                STR [0] "ENTEL"
+1   EXT_FLD_CLIENT_CHURN_STATUS         ENUM [0] 0
+0 PIN_FLD_NAMEINFO      ARRAY [0] allocated 20, used 11
+1   PIN_FLD_CONTACT_TYPE    STR [0] "101"
+1   PIN_FLD_FIRST_NAME      STR [0] "Robert"
+1   PIN_FLD_LAST_NAME       STR [0] "Altamirano"
+1   PIN_FLD_COMPANY         STR [0] "Robert Altamirano S.A."
+1   PIN_FLD_ADDRESS         STR [0] "Av. Libertador Bernardo O'Higgins 1500, Depto 501"
+1   PIN_FLD_COUNTRY         STR [0] "CL"
+1   PIN_FLD_STATE           STR [0] "Metropolitana"
+1   PIN_FLD_CITY            STR [0] "Santiago"
+1   PIN_FLD_ZIP             STR [0] "3570000"
+1   PIN_FLD_EMAIL_ADDR      STR [0] "roberto.altamirano@example.com"
+1   PIN_FLD_PHONES       ARRAY [0] allocated 5, used 1
+2     PIN_FLD_PHONE          STR [0] "+56911112222"
+0 PIN_FLD_NAMEINFO      ARRAY [1] allocated 20, used 11
+1   PIN_FLD_CONTACT_TYPE    STR [0] "103"
+1   PIN_FLD_FIRST_NAME      STR [0] "Robert"
+1   PIN_FLD_LAST_NAME       STR [0] "Altamirano"
+1   PIN_FLD_COMPANY         STR [0] "Robert Altamirano S.A."
+1   PIN_FLD_ADDRESS         STR [0] "Av. Libertador Bernardo O'Higgins 1500, Depto 502"
+1   PIN_FLD_COUNTRY         STR [0] "CL"
+1   PIN_FLD_STATE           STR [0] "Metropolitana"
+1   PIN_FLD_CITY            STR [0] "Santiago"
+1   PIN_FLD_ZIP             STR [0] "3580000"
+1   PIN_FLD_EMAIL_ADDR      STR [0] "roberto.altamirano@example.com"
+1   PIN_FLD_PHONES       ARRAY [0] allocated 5, used 1
+2     PIN_FLD_PHONE          STR [0] "+56933334444"
+EOF
+xop EXT_OP_CUST_POL_CREATE_CA 0 1</textarea>
+                            </label>
+                            <button type="submit">Descargar NAP CREATE_CA</button>
+                        </form>
+                    </div>
+                    <section id="createCaResult"></section>
+                </section>
+                <section id="createBaPanel" class="entel-operation-panel">
+                    <div class="bc-operation-panel">
+                        <h2>EXT_OP_CUST_POL_CREATE_BA</h2>
+                        <p class="bc-time-note">Cuenta pagadora. El NAP queda precargado y editable antes de descargar.</p>
+                        <p class="bc-important-note">Importante: cambia PIN_FLD_ACCOUNT_NO y PIN_FLD_PARENT_NAME. PIN_FLD_PARENT_NAME es la cuenta cliente.</p>
+                        <form id="createBaForm" class="bc-inline-form">
+                            <label>
+                                PIN_FLD_ACCOUNT_NO
+                                <input id="createBaAccountNo" name="accountNo" type="text" value="02049908" required>
+                            </label>
+                            <label>
+                                PIN_FLD_PARENT_NAME
+                                <input id="createBaParentName" name="parentName" type="text" value="02049901" required>
+                            </label>
+                            <label class="wide-field">
+                                NAP editable
+                                <textarea id="createBaTemplate" class="bc-template-area" spellcheck="false">r << EOF 1
+0 PIN_FLD_POID           POID [0] 0.0.0.1 /account -1 0
+0 PIN_FLD_PROGRAM_NAME    STR [0] "Create Paying Account API REST"
+0 PIN_FLD_USER_NAME       STR [0] "RAV"
+0 PIN_FLD_ACCTINFO      ARRAY [0] allocated 30, used 20
+1   PIN_FLD_CURRENCY                      INT [0] 152
+1   PIN_FLD_ACCOUNT_NO                    STR [0] "02049908"
+1   PIN_FLD_AAC_SOURCE                    STR [0] "CTA-GEN"
+1   PIN_FLD_AAC_VENDOR                    STR [0] "Cuenta Generica"
+1   PIN_FLD_PARENT_NAME                   STR [0] "02049901"
+1   PIN_FLD_LOCALE                        STR [0] "es_CL"
+1   PIN_FLD_GL_SEGMENT                    STR [0] "ENT"
+1   EXT_FLD_SUB_SEGMENT_DESCR         STR [0] "Convergente"
+1   PIN_FLD_GROUP_INFO               SUBSTRUCT [0] allocated 20, used 0
+1   EXT_FLD_SUB_SEGMENT                   STR [0] "P002"
+1   EXT_FLD_SOCIETY                       STR [0] "ENT"
+1   EXT_FLD_BILLING_CYCLE                 STR [0] "CICLO_01"
+1   EXT_FLD_NOTIFICATION_TYPE            ENUM [0] 1
+1   EXT_FLD_SERVICE_NAME                  STR [0] "001"
+1   EXT_FLD_GL_ACCOUNT                    STR [0] "GL-1000"
+1   EXT_FLD_DIGIT_ACCOUNT                 STR [0] "7"
+1   EXT_FLD_INTEREST_FLAG                ENUM [0] 0
+1   EXT_FLD_BUREAU_FLAG                  ENUM [0] 0
+1   EXT_FLD_EXT_AGENCY_FLAG              ENUM [0] 0
+1   EXT_FLD_COLL_EXPENSES_FLAG           ENUM [0] 0
+1   EXT_FLD_RECONNECTION_FEE_FLAG        ENUM [0] 0
+1   EXT_FLD_PENALTY_FLAG                 ENUM [0] 0
+1   EXT_FLD_PAYING_CHURN_STATUS          ENUM [0] 0
+0 PIN_FLD_NAMEINFO      ARRAY [0] allocated 20, used 11
+1   PIN_FLD_CONTACT_TYPE                  STR [0] "102"
+1   PIN_FLD_FIRST_NAME                    STR [0] "Juan"
+1   PIN_FLD_LAST_NAME                     STR [0] "Perez"
+1   PIN_FLD_COMPANY                       STR [0] "Cliente Pagador S.A."
+1   PIN_FLD_ADDRESS                       STR [0] "Av. Principal 123"
+1   PIN_FLD_COUNTRY                       STR [0] "CL"
+1   PIN_FLD_STATE                         STR [0] "Metropolitana"
+1   PIN_FLD_CITY                          STR [0] "Santiago"
+1   PIN_FLD_ZIP                           STR [0] "8320000"
+1   PIN_FLD_EMAIL_ADDR                    STR [0] "juan.perez@example.com"
+1   PIN_FLD_PHONES       ARRAY [0] allocated 5, used 1
+2     PIN_FLD_PHONE                       STR [0] "+56977778888"
+0 PIN_FLD_NAMEINFO      ARRAY [1] allocated 20, used 11
+1   PIN_FLD_CONTACT_TYPE                  STR [0] "104"
+1   PIN_FLD_FIRST_NAME                    STR [0] "Juan"
+1   PIN_FLD_LAST_NAME                     STR [0] "Perez"
+1   PIN_FLD_COMPANY                       STR [0] "Cliente Pagador S.A."
+1   PIN_FLD_ADDRESS                       STR [0] "Av. Principal 123"
+1   PIN_FLD_COUNTRY                       STR [0] "CL"
+1   PIN_FLD_STATE                         STR [0] "Metropolitana"
+1   PIN_FLD_CITY                          STR [0] "Santiago"
+1   PIN_FLD_ZIP                           STR [0] "8320000"
+1   PIN_FLD_EMAIL_ADDR                    STR [0] "juan.perez@example.com"
+1   PIN_FLD_PHONES       ARRAY [0] allocated 5, used 1
+2     PIN_FLD_PHONE                       STR [0] "+56977778888"
+EOF
+xop EXT_OP_CUST_POL_CREATE_BA 0 1</textarea>
+                            </label>
+                            <button type="submit">Descargar NAP CREATE_BA</button>
+                        </form>
+                    </div>
+                    <section id="createBaResult"></section>
                 </section>
                 <section id="podlPanel" class="entel-operation-panel">
                     <div class="bc-operation-panel">
@@ -3415,6 +3574,7 @@ class HomeController {
                     }
 
                     function buildTxt() {
+                        const outputType = valueOf("changeNumberOutputType");
                         const accountNo = valueOf("accountNo");
                         const programName = valueOf("programName") || DEFAULT_PROGRAM_NAME;
                         const currentNumber = valueOf("currentNumber");
@@ -3425,9 +3585,20 @@ class HomeController {
                             throw new Error("Debe diligenciar CUENTA_PAGADORA, NUMERO_ACTUAL y NUMERO_NUEVO_LIBRE.");
                         }
 
+                        if (outputType === "IEL") {
+                            return {
+                                outputType,
+                                accountNo,
+                                currentNumber,
+                                newNumber,
+                                content: [
+                                    "#ACCOUNT_NO;Nombre_del_programa_solicitante;Numero_actual;Nuevo_numero;IMEI",
+                                    `${accountNo};${programName};${currentNumber};${newNumber};${imei}`
+                                ].join("\\r\\n") + "\\r\\n"
+                            };
+                        }
+
                         const nap = [
-                            "1. NAP:",
-                            "",
                             "r << XXX 1",
                             "0 PIN_FLD_POID           POID [0] 0.0.0.1 /service/telco/gsm -1 0",
                             `0 PIN_FLD_ACCOUNT_NO      STR [0] "${escapeNap(accountNo)}"`,
@@ -3446,10 +3617,11 @@ class HomeController {
                         ].join("\\r\\n");
 
                         return {
+                            outputType,
                             accountNo,
                             currentNumber,
                             newNumber,
-                            content: `${nap}\\r\\n\\r\\n${ile}\\r\\n`
+                            content: `${nap}\\r\\n`
                         };
                     }
 
@@ -3500,6 +3672,39 @@ class HomeController {
                         };
                     }
 
+                    function replaceFlistStringField(content, fieldName, value) {
+                        return content.split("\\n").map(line => {
+                            if (line.includes(fieldName) && line.includes("STR [0]")) {
+                                return line.replace(/"[^"]*"/, `"${escapeNap(value)}"`);
+                            }
+                            return line;
+                        }).join("\\n");
+                    }
+
+                    function templateContent(templateId) {
+                        return document.getElementById(templateId).value.trimEnd() + "\\r\\n";
+                    }
+
+                    function syncCreateCaTemplate() {
+                        const accountNo = valueOf("createCaAccountNo");
+                        const template = document.getElementById("createCaTemplate");
+                        if (accountNo) {
+                            template.value = replaceFlistStringField(template.value, "PIN_FLD_ACCOUNT_NO", accountNo);
+                        }
+                    }
+
+                    function syncCreateBaTemplate() {
+                        const accountNo = valueOf("createBaAccountNo");
+                        const parentName = valueOf("createBaParentName");
+                        const template = document.getElementById("createBaTemplate");
+                        if (accountNo) {
+                            template.value = replaceFlistStringField(template.value, "PIN_FLD_ACCOUNT_NO", accountNo);
+                        }
+                        if (parentName) {
+                            template.value = replaceFlistStringField(template.value, "PIN_FLD_PARENT_NAME", parentName);
+                        }
+                    }
+
                     function renderPreview(targetId, successMessage, content) {
                         document.getElementById(targetId).innerHTML = `
                             ${message("success", successMessage)}
@@ -3545,8 +3750,9 @@ class HomeController {
                         event.preventDefault();
                         try {
                             const generated = buildTxt();
-                            const fileName = `entel_change_number_${sanitizedFilePart(generated.accountNo)}_${sanitizedFilePart(generated.currentNumber)}_to_${sanitizedFilePart(generated.newNumber)}.txt`;
-                            renderPreview("changeNumberResult", "TXT ENTEL generado correctamente.", generated.content);
+                            const extension = generated.outputType === "IEL" ? "iel" : "nap";
+                            const fileName = `entel_change_number_${generated.outputType.toLowerCase()}_${sanitizedFilePart(generated.accountNo)}_${sanitizedFilePart(generated.currentNumber)}_to_${sanitizedFilePart(generated.newNumber)}.${extension}`;
+                            renderPreview("changeNumberResult", `${generated.outputType} CHANGE_NUMBER generado correctamente.`, generated.content);
                             downloadText(fileName, generated.content);
                         } catch (error) {
                             document.getElementById("changeNumberResult").innerHTML = message("error", error.message);
@@ -3563,6 +3769,44 @@ class HomeController {
                             downloadText(fileName, generated.content);
                         } catch (error) {
                             document.getElementById("addAssetResult").innerHTML = message("error", error.message);
+                        }
+                    });
+
+                    document.getElementById("createCaAccountNo").addEventListener("input", syncCreateCaTemplate);
+                    document.getElementById("createCaForm").addEventListener("submit", function (event) {
+                        event.preventDefault();
+                        try {
+                            const accountNo = valueOf("createCaAccountNo");
+                            if (!accountNo) {
+                                throw new Error("Debe diligenciar PIN_FLD_ACCOUNT_NO para la cuenta cliente.");
+                            }
+                            syncCreateCaTemplate();
+                            const content = templateContent("createCaTemplate");
+                            const fileName = `entel_create_ca_${sanitizedFilePart(accountNo)}.nap`;
+                            renderPreview("createCaResult", "NAP CREATE_CA generado correctamente.", content);
+                            downloadText(fileName, content);
+                        } catch (error) {
+                            document.getElementById("createCaResult").innerHTML = message("error", error.message);
+                        }
+                    });
+
+                    document.getElementById("createBaAccountNo").addEventListener("input", syncCreateBaTemplate);
+                    document.getElementById("createBaParentName").addEventListener("input", syncCreateBaTemplate);
+                    document.getElementById("createBaForm").addEventListener("submit", function (event) {
+                        event.preventDefault();
+                        try {
+                            const accountNo = valueOf("createBaAccountNo");
+                            const parentName = valueOf("createBaParentName");
+                            if (!accountNo || !parentName) {
+                                throw new Error("Debe diligenciar PIN_FLD_ACCOUNT_NO y PIN_FLD_PARENT_NAME para la cuenta pagadora.");
+                            }
+                            syncCreateBaTemplate();
+                            const content = templateContent("createBaTemplate");
+                            const fileName = `entel_create_ba_${sanitizedFilePart(accountNo)}_parent_${sanitizedFilePart(parentName)}.nap`;
+                            renderPreview("createBaResult", "NAP CREATE_BA generado correctamente.", content);
+                            downloadText(fileName, content);
+                        } catch (error) {
+                            document.getElementById("createBaResult").innerHTML = message("error", error.message);
                         }
                     });
 
