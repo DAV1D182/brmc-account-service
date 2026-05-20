@@ -3373,13 +3373,25 @@ class HomeController {
                         <h2>EXT_OP_CUST_POL_CREATE_CA</h2>
                         <p class="bc-time-note">Cuenta cliente. El NAP queda precargado y editable antes de descargar.</p>
                         <p class="bc-important-note">Importante: cambia PIN_FLD_ACCOUNT_NO antes de ejecutar este opcode.</p>
-                        <form id="createCaForm" class="bc-inline-form">
-                            <label>
+                        <form id="createCaForm" class="entel-account-form">
+                            <div class="entel-key-grid">
+                            <label class="entel-critical-field">
                                 PIN_FLD_ACCOUNT_NO
                                 <input id="createCaAccountNo" name="accountNo" type="text" value="02049901" required>
                             </label>
-                            <label class="wide-field">
-                                NAP editable
+                            <div class="entel-key-note">
+                                <span>Tipo</span>
+                                <strong>Cuenta Cliente</strong>
+                                <small>Opcode: EXT_OP_CUST_POL_CREATE_CA</small>
+                            </div>
+                            </div>
+                            <div class="entel-template-card">
+                                <div class="entel-template-header">
+                                    <div>
+                                        <span>NAP editable</span>
+                                        <strong>Revisa y ajusta el flist antes de descargar</strong>
+                                    </div>
+                                </div>
                                 <textarea id="createCaTemplate" class="bc-template-area" spellcheck="false">r << EOF 1
 0 PIN_FLD_POID           POID [0] 0.0.0.1 /account -1 0
 0 PIN_FLD_PROGRAM_NAME    STR [0] "Create Account API REST"
@@ -3429,8 +3441,10 @@ class HomeController {
 2     PIN_FLD_PHONE          STR [0] "+56933334444"
 EOF
 xop EXT_OP_CUST_POL_CREATE_CA 0 1</textarea>
-                            </label>
-                            <button type="submit">Descargar NAP CREATE_CA</button>
+                            </div>
+                            <div class="entel-form-actions">
+                                <button type="submit">Descargar NAP CREATE_CA</button>
+                            </div>
                         </form>
                     </div>
                     <section id="createCaResult"></section>
@@ -3440,17 +3454,29 @@ xop EXT_OP_CUST_POL_CREATE_CA 0 1</textarea>
                         <h2>EXT_OP_CUST_POL_CREATE_BA</h2>
                         <p class="bc-time-note">Cuenta pagadora. El NAP queda precargado y editable antes de descargar.</p>
                         <p class="bc-important-note">Importante: cambia PIN_FLD_ACCOUNT_NO y PIN_FLD_PARENT_NAME. PIN_FLD_PARENT_NAME es la cuenta cliente.</p>
-                        <form id="createBaForm" class="bc-inline-form">
-                            <label>
+                        <form id="createBaForm" class="entel-account-form">
+                            <div class="entel-key-grid">
+                            <label class="entel-critical-field">
                                 PIN_FLD_ACCOUNT_NO
                                 <input id="createBaAccountNo" name="accountNo" type="text" value="02049908" required>
                             </label>
-                            <label>
+                            <label class="entel-critical-field">
                                 PIN_FLD_PARENT_NAME
                                 <input id="createBaParentName" name="parentName" type="text" value="02049901" required>
                             </label>
-                            <label class="wide-field">
-                                NAP editable
+                            <div class="entel-key-note">
+                                <span>Tipo</span>
+                                <strong>Cuenta Pagadora</strong>
+                                <small>Parent Name debe ser la cuenta cliente</small>
+                            </div>
+                            </div>
+                            <div class="entel-template-card">
+                                <div class="entel-template-header">
+                                    <div>
+                                        <span>NAP editable</span>
+                                        <strong>Revisa y ajusta el flist antes de descargar</strong>
+                                    </div>
+                                </div>
                                 <textarea id="createBaTemplate" class="bc-template-area" spellcheck="false">r << EOF 1
 0 PIN_FLD_POID           POID [0] 0.0.0.1 /account -1 0
 0 PIN_FLD_PROGRAM_NAME    STR [0] "Create Paying Account API REST"
@@ -3507,8 +3533,10 @@ xop EXT_OP_CUST_POL_CREATE_CA 0 1</textarea>
 2     PIN_FLD_PHONE                       STR [0] "+56977778888"
 EOF
 xop EXT_OP_CUST_POL_CREATE_BA 0 1</textarea>
-                            </label>
-                            <button type="submit">Descargar NAP CREATE_BA</button>
+                            </div>
+                            <div class="entel-form-actions">
+                                <button type="submit">Descargar NAP CREATE_BA</button>
+                            </div>
                         </form>
                     </div>
                     <section id="createBaResult"></section>

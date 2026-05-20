@@ -581,14 +581,103 @@ a.disabled {
     padding: 12px 14px;
 }
 
-.bc-template-area {
+.entel-account-form {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    display: grid !important;
+    gap: 14px !important;
+    grid-template-columns: 1fr !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.entel-key-grid {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.entel-critical-field,
+.entel-key-note {
+    background: #ffffff;
     border: 1px solid var(--bc-border);
     border-radius: 8px;
+    box-shadow: 0 6px 16px rgba(22, 33, 59, 0.06);
+    padding: 12px;
+}
+
+.entel-critical-field {
+    color: var(--bc-navy-dark);
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.entel-critical-field input {
+    border-color: #f59e0b;
+    margin-top: 8px;
+    width: 100%;
+}
+
+.entel-key-note span,
+.entel-template-header span {
+    color: var(--bc-muted);
+    display: block;
+    font-size: 12px;
+    font-weight: 900;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+}
+
+.entel-key-note strong,
+.entel-template-header strong {
+    color: var(--bc-navy-dark);
+    display: block;
+}
+
+.entel-key-note small {
+    color: var(--bc-muted);
+    display: block;
+    font-weight: 700;
+    margin-top: 6px;
+}
+
+.entel-template-card {
+    background: #ffffff;
+    border: 1px solid var(--bc-border);
+    border-radius: 8px;
+    box-shadow: var(--bc-shadow);
+    overflow: hidden;
+}
+
+.entel-template-header {
+    align-items: center;
+    background: #f7f9fc;
+    border-bottom: 1px solid var(--bc-border);
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 14px;
+}
+
+.entel-form-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.entel-form-actions button {
+    min-width: 260px;
+}
+
+.bc-template-area {
+    border: 0;
+    border-radius: 0;
     color: var(--bc-text);
     font-family: Consolas, "Courier New", monospace;
-    font-size: 12px;
-    min-height: 420px;
-    padding: 12px;
+    font-size: 13px;
+    line-height: 1.45;
+    min-height: 560px;
+    padding: 16px;
     resize: vertical;
     white-space: pre;
     width: 100%;
