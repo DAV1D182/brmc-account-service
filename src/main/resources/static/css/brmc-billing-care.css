@@ -534,6 +534,53 @@ a.disabled {
     margin: 0;
 }
 
+.bc-operation-switch {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 18px 0;
+}
+
+.bc-operation-tab {
+    background: #ffffff;
+    border: 1px solid var(--bc-border);
+    color: var(--bc-navy-dark);
+}
+
+.bc-operation-tab:hover,
+.bc-operation-tab.active {
+    background: var(--bc-navy);
+    border-color: var(--bc-navy);
+    color: #ffffff;
+}
+
+.entel-operation-panel {
+    display: none;
+}
+
+.entel-operation-panel.active {
+    display: block;
+}
+
+.bc-helper-list {
+    color: var(--bc-muted);
+    display: grid;
+    gap: 6px;
+    margin: 0;
+    padding-left: 20px;
+}
+
+.bc-code-preview {
+    background: #0f172a;
+    border: 1px solid #1e293b;
+    border-radius: 8px;
+    color: #e2e8f0;
+    max-height: 520px;
+    overflow: auto;
+    padding: 16px;
+    white-space: pre-wrap;
+}
+
 .bc-invoice-document {
     background: #ffffff;
     border: 1px solid var(--bc-border);

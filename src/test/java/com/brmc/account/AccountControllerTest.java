@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestBuilders.formLogin;
@@ -21,6 +22,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithAnonymousUser;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 
 @SpringBootTest
@@ -138,7 +140,20 @@ class AccountControllerTest {
                 .andExpect(content().string(containsString("PIN_FLD_PROGRAM_NAME")))
                 .andExpect(content().string(containsString("NUMERO_ACTUAL")))
                 .andExpect(content().string(containsString("NUMERO_NUEVO_LIBRE")))
-                .andExpect(content().string(containsString("Descargar TXT ENTEL")));
+                .andExpect(content().string(containsString("Descargar TXT ENTEL")))
+                .andExpect(content().string(containsString("EXT_OP_CUST_POL_CHANGE_NUMBER")))
+                .andExpect(content().string(containsString("Generar PODL")))
+                .andExpect(content().string(containsString("/api/entel/podl")))
+                .andExpect(content().string(containsString("PODL_template_BRMC.xlsx")));
+    }
+
+    @Test
+    void rejectsInvalidPodlUpload() throws Exception {
+        var file = new MockMultipartFile("file", "podl.txt", "text/plain", "bad".getBytes());
+
+        mockMvc.perform(multipart("/api/entel/podl").file(file))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(containsString("Solo se soportan archivos .xlsx")));
     }
 
     @Test

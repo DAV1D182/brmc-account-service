@@ -3258,11 +3258,19 @@ class HomeController {
     @GetMapping(value = "/entel", produces = MediaType.TEXT_HTML_VALUE)
     String entel() {
         return page("ENTEL", """
-                <p>Genera un TXT con bloque NAP y linea ILE para solicitud de cambio de numero.</p>
+                <p>Central de utilidades ENTEL para solicitudes operativas y generacion de artefactos BRM.</p>
                 <div class="toolbar">
                     <a class="muted" href="/">Volver al dashboard</a>
                 </div>
-                <form id="entelForm">
+                <div class="bc-operation-switch" role="tablist" aria-label="Operaciones ENTEL">
+                    <button type="button" class="bc-operation-tab active" data-panel="changeNumberPanel">EXT_OP_CUST_POL_CHANGE_NUMBER</button>
+                    <button type="button" class="bc-operation-tab" data-panel="podlPanel">Generar PODL</button>
+                </div>
+                <section id="changeNumberPanel" class="entel-operation-panel active">
+                    <div class="bc-operation-panel">
+                        <h2>EXT_OP_CUST_POL_CHANGE_NUMBER</h2>
+                        <p class="bc-time-note">Genera un TXT con bloque NAP y linea ILE para solicitud de cambio de numero.</p>
+                <form id="entelForm" class="bc-inline-form">
                     <label>
                         CUENTA_PAGADORA
                         <input id="accountNo" name="accountNo" type="text" placeholder="02049903" required autofocus>
@@ -3285,7 +3293,45 @@ class HomeController {
                     </label>
                     <button type="submit">Descargar TXT ENTEL</button>
                 </form>
-                <section id="result"></section>
+                    </div>
+                    <section id="changeNumberResult"></section>
+                </section>
+                <section id="podlPanel" class="entel-operation-panel">
+                    <div class="bc-operation-panel">
+                        <h2>Generar PODL desde Excel</h2>
+                        <p class="bc-time-note">Descarga la plantilla, diligencia la hoja PODL_INPUT y carga el .xlsx para generar el archivo .podl.</p>
+                        <div class="summary-grid">
+                            <div class="summary-item">
+                                <span>Hoja requerida</span>
+                                <strong>PODL_INPUT</strong>
+                            </div>
+                            <div class="summary-item">
+                                <span>Salida</span>
+                                <strong>Archivo .podl</strong>
+                            </div>
+                            <div class="summary-item">
+                                <span>Validacion</span>
+                                <strong>Campos obligatorios y tipos BRM</strong>
+                            </div>
+                        </div>
+                        <div class="toolbar">
+                            <a class="secondary" href="/templates/PODL_template_BRMC.xlsx" download>Descargar Excel template PODL</a>
+                        </div>
+                        <form id="podlForm" class="bc-inline-form" enctype="multipart/form-data">
+                            <label class="wide-field">
+                                Excel PODL_INPUT (.xlsx)
+                                <input id="podlFile" name="file" type="file" accept=".xlsx" required>
+                            </label>
+                            <button type="submit">Generar PODL</button>
+                        </form>
+                        <ul class="bc-helper-list">
+                            <li>storable_class, sql_table, field_type, field_name, field_description, create_rule, modify_rule y sql_column son obligatorios.</li>
+                            <li>Para field_type STRING debes diligenciar field_length.</li>
+                            <li>Si una clase no trae PIN_FLD_POID, el generador lo agrega como campo tecnico.</li>
+                        </ul>
+                    </div>
+                    <section id="podlResult"></section>
+                </section>
                 <script>
                     const DEFAULT_PROGRAM_NAME = "EXT_OP_CUST_POL_CHANGE_NUMBER";
 
@@ -3303,6 +3349,10 @@ class HomeController {
 
                     function escapeNap(value) {
                         return value.replace(/\\\\/g, "\\\\\\\\").replace(/"/g, '\\\\"');
+                    }
+
+                    function escapeHtml(value) {
+                        return value.replace(/[&<>]/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[char]));
                     }
 
                     function buildTxt() {
@@ -3344,16 +3394,16 @@ class HomeController {
                         };
                     }
 
-                    function renderPreview(content) {
-                        document.getElementById("result").innerHTML = `
-                            ${message("success", "TXT ENTEL generado correctamente.")}
+                    function renderPreview(targetId, successMessage, content) {
+                        document.getElementById(targetId).innerHTML = `
+                            ${message("success", successMessage)}
                             <h2>Vista previa</h2>
-                            <pre style="white-space: pre-wrap; border: 1px solid #dbe3ea; border-radius: 8px; padding: 16px; background: #f8fafc;">${content.replace(/[&<>]/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[char]))}</pre>
+                            <pre class="bc-code-preview">${escapeHtml(content)}</pre>
                         `;
                     }
 
-                    function downloadTxt(fileName, content) {
-                        const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+                    function downloadText(fileName, content, type = "text/plain;charset=utf-8") {
+                        const blob = new Blob([content], { type });
                         const url = URL.createObjectURL(blob);
                         const link = document.createElement("a");
                         link.href = url;
@@ -3364,15 +3414,58 @@ class HomeController {
                         URL.revokeObjectURL(url);
                     }
 
+                    function fileNameFromDisposition(disposition, fallback) {
+                        if (!disposition) {
+                            return fallback;
+                        }
+                        const utf8Match = disposition.match(/filename\\*=UTF-8''([^;]+)/i);
+                        if (utf8Match) {
+                            return decodeURIComponent(utf8Match[1]);
+                        }
+                        const plainMatch = disposition.match(/filename="?([^";]+)"?/i);
+                        return plainMatch ? plainMatch[1] : fallback;
+                    }
+
+                    document.querySelectorAll(".bc-operation-tab").forEach(button => {
+                        button.addEventListener("click", () => {
+                            document.querySelectorAll(".bc-operation-tab").forEach(tab => tab.classList.remove("active"));
+                            document.querySelectorAll(".entel-operation-panel").forEach(panel => panel.classList.remove("active"));
+                            button.classList.add("active");
+                            document.getElementById(button.dataset.panel).classList.add("active");
+                        });
+                    });
+
                     document.getElementById("entelForm").addEventListener("submit", function (event) {
                         event.preventDefault();
                         try {
                             const generated = buildTxt();
                             const fileName = `entel_change_number_${sanitizedFilePart(generated.accountNo)}_${sanitizedFilePart(generated.currentNumber)}_to_${sanitizedFilePart(generated.newNumber)}.txt`;
-                            renderPreview(generated.content);
-                            downloadTxt(fileName, generated.content);
+                            renderPreview("changeNumberResult", "TXT ENTEL generado correctamente.", generated.content);
+                            downloadText(fileName, generated.content);
                         } catch (error) {
-                            document.getElementById("result").innerHTML = message("error", error.message);
+                            document.getElementById("changeNumberResult").innerHTML = message("error", error.message);
+                        }
+                    });
+
+                    document.getElementById("podlForm").addEventListener("submit", async function (event) {
+                        event.preventDefault();
+                        const result = document.getElementById("podlResult");
+                        result.innerHTML = message("warning", "Generando PODL desde Excel...");
+                        try {
+                            const formData = new FormData(event.currentTarget);
+                            const response = await fetch("/api/entel/podl", {
+                                method: "POST",
+                                body: formData
+                            });
+                            const text = await response.text();
+                            if (!response.ok) {
+                                throw new Error(text || "No fue posible generar el PODL.");
+                            }
+                            const fileName = fileNameFromDisposition(response.headers.get("Content-Disposition"), "entel_podl.podl");
+                            renderPreview("podlResult", "PODL generado correctamente.", text);
+                            downloadText(fileName, text);
+                        } catch (error) {
+                            result.innerHTML = message("error", error.message.replace(/\\n/g, "<br>"));
                         }
                     });
                 </script>
