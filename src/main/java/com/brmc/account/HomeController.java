@@ -3273,7 +3273,7 @@ class HomeController {
                     <div class="bc-operation-panel">
                         <h2>EXT_OP_CUST_POL_CHANGE_NUMBER</h2>
                         <p class="bc-time-note">Genera un archivo NAP o IEL para solicitud de cambio de numero. Selecciona una sola salida por descarga.</p>
-                <form id="entelForm" class="bc-inline-form">
+                <form id="entelForm" class="bc-inline-form entel-compact-form">
                     <label>
                         Tipo de archivo
                         <select id="changeNumberOutputType" name="outputType" required>
@@ -3315,7 +3315,7 @@ class HomeController {
                     <div class="bc-operation-panel">
                         <h2>EXT_OP_CUST_POL_ADD_ASSET</h2>
                         <p class="bc-time-note">Genera un archivo NAP o IEL para comprar/crear un asset de servicio. Selecciona una sola salida por descarga.</p>
-                        <form id="addAssetForm" class="bc-inline-form">
+                        <form id="addAssetForm" class="bc-inline-form entel-compact-form">
                             <label>
                                 Tipo de archivo
                                 <select id="addAssetOutputType" name="outputType" required>
@@ -3562,7 +3562,7 @@ xop EXT_OP_CUST_POL_CREATE_BA 0 1</textarea>
                         <div class="toolbar">
                             <a class="secondary" href="/templates/PODL_template_BRMC.xlsx" download>Descargar Excel template PODL</a>
                         </div>
-                        <form id="podlForm" class="bc-inline-form" enctype="multipart/form-data">
+                        <form id="podlForm" class="bc-inline-form entel-compact-form" enctype="multipart/form-data">
                             <label class="wide-field">
                                 Excel PODL_INPUT (.xlsx)
                                 <input id="podlFile" name="file" type="file" accept=".xlsx" required>
