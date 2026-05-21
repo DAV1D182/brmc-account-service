@@ -606,6 +606,18 @@ a.disabled {
     grid-column: 1 / -1;
 }
 
+.entel-doc-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 4px;
+}
+
+.entel-doc-actions button {
+    min-width: min(100%, 300px);
+}
+
 .entel-account-form {
     background: transparent !important;
     border: 0 !important;
@@ -687,6 +699,8 @@ a.disabled {
 
 .entel-form-actions {
     display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
     justify-content: flex-end;
 }
 

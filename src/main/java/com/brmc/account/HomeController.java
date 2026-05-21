@@ -3308,6 +3308,9 @@ class HomeController {
                             <li>IEL genera solo la linea ACCOUNT_NO;PROGRAM_NAME;NUMERO_ACTUAL;NUMERO_NUEVO;IMEI.</li>
                             <li>Si IMEI queda vacio en IEL, se usa CUENTA_PAGADORA_imei.</li>
                         </ul>
+                        <div class="entel-doc-actions">
+                            <button type="button" class="secondary" id="downloadChangeNumberDocButton">Descargar documentacion CHANGE_NUMBER</button>
+                        </div>
                     </div>
                     <section id="changeNumberResult"></section>
                 </section>
@@ -3365,6 +3368,9 @@ class HomeController {
                             <li>IEL genera una sola linea con ACCOUNT_NO;SERVICE_TYPE;PROGRAM_NAME;LOGIN;IMEI;PLAN_MIGRABLE.</li>
                             <li>Si IMEI queda vacio, el NAP omite PIN_FLD_IMEI y el IEL deja la columna vacia.</li>
                         </ul>
+                        <div class="entel-doc-actions">
+                            <button type="button" class="secondary" id="downloadAddAssetDocButton">Descargar documentacion ADD_ASSET</button>
+                        </div>
                     </div>
                     <section id="addAssetResult"></section>
                 </section>
@@ -3443,6 +3449,7 @@ EOF
 xop EXT_OP_CUST_POL_CREATE_CA 0 1</textarea>
                             </div>
                             <div class="entel-form-actions">
+                                <button type="button" class="secondary" id="downloadCreateCaDocButton">Descargar documentacion CREATE_CA</button>
                                 <button type="submit">Descargar NAP CREATE_CA</button>
                             </div>
                         </form>
@@ -3535,6 +3542,7 @@ EOF
 xop EXT_OP_CUST_POL_CREATE_BA 0 1</textarea>
                             </div>
                             <div class="entel-form-actions">
+                                <button type="button" class="secondary" id="downloadCreateBaDocButton">Descargar documentacion CREATE_BA</button>
                                 <button type="submit">Descargar NAP CREATE_BA</button>
                             </div>
                         </form>
@@ -3765,6 +3773,295 @@ xop EXT_OP_CUST_POL_CREATE_BA 0 1</textarea>
                         return plainMatch ? plainMatch[1] : fallback;
                     }
 
+                    function fieldOrDefault(id, fallback) {
+                        const element = document.getElementById(id);
+                        const value = element ? element.value.trim() : "";
+                        return value || fallback;
+                    }
+
+                    function sqlValue(value) {
+                        return String(value || "").replace(/'/g, "''");
+                    }
+
+                    function joinDoc(lines) {
+                        return lines.join("\\r\\n") + "\\r\\n";
+                    }
+
+                    function servicesByAccountQuery(accountNo) {
+                        const sqlAccountNo = sqlValue(accountNo || "02049905");
+                        return joinDoc([
+                            "--SERVICIOS DE UNA CUENTA",
+                            "select distinct a.poid_id0  as poid_cuenta,",
+                            "a.account_no, s.status, s.poid_id0, s.poid_type,s.login, s.*",
+                            "from service_t s",
+                            "join account_t a ON a.poid_id0 = s.account_obj_id0",
+                            "where 1=1",
+                            "and a.account_no in (--'02049903'--,",
+                            "'" + sqlAccountNo + "'",
+                            ");"
+                        ]).trimEnd();
+                    }
+
+                    function accountInfoQuery(accountNo) {
+                        const sqlAccountNo = sqlValue(accountNo || "248835567577");
+                        return joinDoc([
+                            "--Info de la cuenta",
+                            "select vp.marca,vp.rut, a.account_no, a.poid_id0 as POID_CUENTA, bi.poid_id0 as POID_BILLINFO, bi.bal_grp_obj_id0 as BALNC_GRP,vp.*",
+                            "from account_t a, profile_t p, vtr_profile_account_T vp, billinfo_t bi",
+                            "--where bi.poid_id0 = 22329371574",
+                            "where a.account_no IN ('" + sqlAccountNo + "')",
+                            "--where vp.rut in ('17491570-9')",
+                            "--where a.poid_id0 = 24471695370",
+                            "and a.poid_id0 = p.account_obj_id0",
+                            "and p.poid_id0 = vp.obj_id0",
+                            "and a.poid_id0 = bi.account_obj_id0;"
+                        ]).trimEnd();
+                    }
+
+                    function accountHierarchyQuery(payingAccountNo) {
+                        const sqlPayingAccountNo = sqlValue(payingAccountNo || "02049903");
+                        return joinDoc([
+                            "-- Jerarquia de cuentas",
+                            "select",
+                            "    c.account_no cuenta_cliente,",
+                            "    p.account_no cuenta_pagadora,",
+                            "    g.parent_id0,c.poid_id0, g.poid_id0,m.obj_id0,m.object_id0,p.poid_id0,g.poid_type",
+                            "from",
+                            "    account_t c,",
+                            "    group_t g,",
+                            "    account_t p,",
+                            "    group_billing_members_t m",
+                            "where",
+                            "    g.parent_id0=c.poid_id0",
+                            "    and g.poid_id0=m.obj_id0",
+                            "    and m.object_id0=p.poid_id0",
+                            "    and p.account_no = '" + sqlPayingAccountNo + "'",
+                            "    and g.poid_type like '/group/billing';"
+                        ]).trimEnd();
+                    }
+
+                    function napExecutionSteps() {
+                        return joinDoc([
+                            "## Pasos de ejecucion en PJE",
+                            "",
+                            "1. Entrar al pod del pje.",
+                            "",
+                            "```bash",
+                            "[omsuser@pje oms]$ cd sys/test",
+                            "[omsuser@pje test]$ testnap",
+                            "===> database 0.0.0.1 from pin.conf \\"userid\\"",
+                            "nap(1121725)>",
+                            "```",
+                            "",
+                            "2. Pegar el NAP generado desde esta pantalla.",
+                            "3. Ejecutar el xop indicado para el opcode.",
+                            "4. Validar el resultado con las consultas SQL de esta documentacion.",
+                            "5. Guardar evidencia: entrada NAP/IEL, salida de testnap, consulta antes y consulta despues."
+                        ]).trimEnd();
+                    }
+
+                    function buildChangeNumberDocumentation() {
+                        const accountNo = fieldOrDefault("accountNo", "02049905");
+                        const programName = fieldOrDefault("programName", DEFAULT_PROGRAM_NAME);
+                        const currentNumber = fieldOrDefault("currentNumber", "NUMERO_ACTUAL");
+                        const newNumber = fieldOrDefault("newNumber", "NUMERO_NUEVO_LIBRE");
+                        const imei = fieldOrDefault("imei", accountNo + "_imei");
+                        return joinDoc([
+                            "# EXT_OP_CUST_POL_CHANGE_NUMBER",
+                            "",
+                            "## Objetivo",
+                            "",
+                            "Cambiar el numero/login de un asset movil existente en BRM. El servicio debe existir como /service/telco/gsm para la cuenta pagadora antes de ejecutar el opcode.",
+                            "",
+                            "## Valores del formulario",
+                            "",
+                            "- CUENTA_PAGADORA: " + accountNo,
+                            "- PIN_FLD_PROGRAM_NAME: " + programName,
+                            "- NUMERO_ACTUAL: " + currentNumber,
+                            "- NUMERO_NUEVO_LIBRE: " + newNumber,
+                            "- IMEI para IEL: " + imei,
+                            "- Opcode numerico: 20005",
+                            "",
+                            "## Validaciones previas",
+                            "",
+                            "- La cuenta pagadora debe existir.",
+                            "- El NUMERO_ACTUAL debe existir como login de un servicio /service/telco/gsm de esa cuenta.",
+                            "- El NUMERO_NUEVO_LIBRE no debe existir ya como login de otro /service/telco/gsm.",
+                            "- Si la consulta devuelve otro poid_type, no ejecutar el cambio de numero con este NAP.",
+                            "",
+                            "## Consulta sugerida",
+                            "",
+                            "```sql",
+                            servicesByAccountQuery(accountNo),
+                            "```",
+                            "",
+                            "## NAP esperado",
+                            "",
+                            "```nap",
+                            "r << XXX 1",
+                            "0 PIN_FLD_POID           POID [0] 0.0.0.1 /service/telco/gsm -1 0",
+                            "0 PIN_FLD_ACCOUNT_NO      STR [0] \\"" + accountNo + "\\"",
+                            "0 PIN_FLD_PROGRAM_NAME    STR [0] \\"" + programName + "\\"",
+                            "0 PIN_FLD_LOGIN           STR [0] \\"" + currentNumber + "\\"",
+                            "0 PIN_FLD_NEW_LOGIN       STR [0] \\"" + newNumber + "\\"",
+                            "XXX",
+                            "xop 20005 0 1",
+                            "```",
+                            "",
+                            napExecutionSteps(),
+                            "",
+                            "## Resultado esperado",
+                            "",
+                            "El servicio /service/telco/gsm debe quedar con PIN_FLD_LOGIN y PIN_FLD_SERVICE_ID actualizados al NUMERO_NUEVO_LIBRE."
+                        ]);
+                    }
+
+                    function buildAddAssetDocumentation() {
+                        const accountNo = fieldOrDefault("addAssetAccountNo", "02049905");
+                        const serviceType = fieldOrDefault("addAssetServiceType", "/service/device");
+                        const programName = fieldOrDefault("addAssetProgramName", "Testnap");
+                        const login = fieldOrDefault("addAssetLogin", "56912345678");
+                        const imei = fieldOrDefault("addAssetImei", "");
+                        const planMigrable = fieldOrDefault("addAssetPlanMigrable", "0");
+                        return joinDoc([
+                            "# EXT_OP_CUST_POL_ADD_ASSET",
+                            "",
+                            "## Objetivo",
+                            "",
+                            "Comprar o crear un asset de servicio para una cuenta pagadora usando el tipo de servicio seleccionado.",
+                            "",
+                            "## Valores del formulario",
+                            "",
+                            "- ACCOUNT_NO / Cuenta pagadora: " + accountNo,
+                            "- SERVICE_TYPE: " + serviceType,
+                            "- PIN_FLD_PROGRAM_NAME: " + programName,
+                            "- PIN_FLD_LOGIN: " + login,
+                            "- IMEI: " + (imei || "No informado"),
+                            "- PLAN_MIGRABLE / PIN_FLD_AAC_PACKAGE: " + planMigrable,
+                            "- Opcode numerico: 20002",
+                            "",
+                            "## Tipos de servicio soportados",
+                            "",
+                            "- /service/pcm_client",
+                            "- /service/admin_client",
+                            "- /service/telephony",
+                            "- /service/other",
+                            "- /service/telco/gsm",
+                            "- /service/device",
+                            "- /service/device_installment",
+                            "",
+                            "## Validaciones previas y posteriores",
+                            "",
+                            "- La cuenta pagadora debe existir.",
+                            "- El login nuevo no debe duplicar otro servicio activo del mismo tipo.",
+                            "- Para movil, validar /service/telco/gsm y, si aplica, IMEI.",
+                            "- Despues de ejecutar, validar el servicio creado con la consulta SQL.",
+                            "",
+                            "## Consulta sugerida",
+                            "",
+                            "```sql",
+                            servicesByAccountQuery(accountNo),
+                            "```",
+                            "",
+                            "## NAP esperado",
+                            "",
+                            "```nap",
+                            "r << EOF 1",
+                            "0 PIN_FLD_POID                          POID [0] 0.0.0.1 " + serviceType + " -1 0",
+                            "0 PIN_FLD_ACCOUNT_NO            STR [0] \\"" + accountNo + "\\"",
+                            "0 PIN_FLD_PROGRAM_NAME          STR [0] \\"" + programName + "\\"",
+                            "0 PIN_FLD_LOGIN                         STR [0] \\"" + login + "\\"",
+                            imei ? "0 PIN_FLD_IMEI                          STR [0] \\"" + imei + "\\"" : "# PIN_FLD_IMEI omitido porque no fue informado",
+                            "0 PIN_FLD_AAC_PACKAGE               ENUM [0] " + planMigrable,
+                            "EOF",
+                            "xop EXT_OP_CUST_POL_ADD_ASSET 0 1",
+                            "```",
+                            "",
+                            napExecutionSteps(),
+                            "",
+                            "## Formato IEL",
+                            "",
+                            "```text",
+                            "# Cuenta_a_la_que_se_asignara_el_servicio;Tipo_servicio_a_crear;Nombre_del_programa_solicitante;Login_servicio_Numero_linea;IMEI;Plan_migrable",
+                            accountNo + ";" + serviceType + ";" + programName + ";" + login + ";" + imei + ";" + planMigrable,
+                            "```"
+                        ]);
+                    }
+
+                    function buildCreateCaDocumentation() {
+                        const accountNo = fieldOrDefault("createCaAccountNo", "02049901");
+                        return joinDoc([
+                            "# EXT_OP_CUST_POL_CREATE_CA",
+                            "",
+                            "## Objetivo",
+                            "",
+                            "Crear una cuenta cliente. Este opcode es sensible al numero de cuenta, por eso debe cambiarse PIN_FLD_ACCOUNT_NO antes de ejecutar.",
+                            "",
+                            "## Campo critico",
+                            "",
+                            "- PIN_FLD_ACCOUNT_NO: " + accountNo,
+                            "- Tipo funcional: Cuenta Cliente",
+                            "- Opcode numerico: 20000",
+                            "",
+                            "## Validaciones previas",
+                            "",
+                            "- Confirmar que el ACCOUNT_NO no exista previamente.",
+                            "- Confirmar RUT/documento y datos de perfil antes de ejecutar.",
+                            "- Guardar salida de testnap y consulta posterior.",
+                            "",
+                            "## Consulta sugerida posterior",
+                            "",
+                            "```sql",
+                            accountInfoQuery(accountNo),
+                            "```",
+                            "",
+                            napExecutionSteps()
+                        ]);
+                    }
+
+                    function buildCreateBaDocumentation() {
+                        const accountNo = fieldOrDefault("createBaAccountNo", "02049908");
+                        const parentName = fieldOrDefault("createBaParentName", "02049901");
+                        return joinDoc([
+                            "# EXT_OP_CUST_POL_CREATE_BA",
+                            "",
+                            "## Objetivo",
+                            "",
+                            "Crear una cuenta pagadora y asociarla a una cuenta cliente mediante PIN_FLD_PARENT_NAME.",
+                            "",
+                            "## Campos criticos",
+                            "",
+                            "- PIN_FLD_ACCOUNT_NO / Cuenta pagadora: " + accountNo,
+                            "- PIN_FLD_PARENT_NAME / Cuenta cliente: " + parentName,
+                            "- Opcode numerico: 20001",
+                            "",
+                            "## Validaciones previas",
+                            "",
+                            "- Confirmar que la cuenta pagadora no exista previamente.",
+                            "- Confirmar que PIN_FLD_PARENT_NAME exista como cuenta cliente.",
+                            "- Validar billinfo, perfil y jerarquia despues de ejecutar.",
+                            "",
+                            "## Consulta sugerida - info de la cuenta pagadora",
+                            "",
+                            "```sql",
+                            accountInfoQuery(accountNo),
+                            "```",
+                            "",
+                            "## Consulta sugerida - jerarquia de cuentas",
+                            "",
+                            "```sql",
+                            accountHierarchyQuery(accountNo),
+                            "```",
+                            "",
+                            napExecutionSteps()
+                        ]);
+                    }
+
+                    function downloadDocumentation(targetId, fileName, content, successMessage) {
+                        renderPreview(targetId, successMessage, content);
+                        downloadText(fileName, content, "text/markdown;charset=utf-8");
+                    }
+
                     document.querySelectorAll(".bc-operation-tab").forEach(button => {
                         button.addEventListener("click", () => {
                             document.querySelectorAll(".bc-operation-tab").forEach(tab => tab.classList.remove("active"));
@@ -3772,6 +4069,33 @@ xop EXT_OP_CUST_POL_CREATE_BA 0 1</textarea>
                             button.classList.add("active");
                             document.getElementById(button.dataset.panel).classList.add("active");
                         });
+                    });
+
+                    document.getElementById("downloadChangeNumberDocButton").addEventListener("click", function () {
+                        const accountNo = fieldOrDefault("accountNo", "02049905");
+                        const currentNumber = fieldOrDefault("currentNumber", "NUMERO_ACTUAL");
+                        const fileName = `doc_ext_op_cust_pol_change_number_${sanitizedFilePart(accountNo)}_${sanitizedFilePart(currentNumber)}.md`;
+                        downloadDocumentation("changeNumberResult", fileName, buildChangeNumberDocumentation(), "Documentacion CHANGE_NUMBER generada correctamente.");
+                    });
+
+                    document.getElementById("downloadAddAssetDocButton").addEventListener("click", function () {
+                        const accountNo = fieldOrDefault("addAssetAccountNo", "02049905");
+                        const login = fieldOrDefault("addAssetLogin", "LOGIN");
+                        const fileName = `doc_ext_op_cust_pol_add_asset_${sanitizedFilePart(accountNo)}_${sanitizedFilePart(login)}.md`;
+                        downloadDocumentation("addAssetResult", fileName, buildAddAssetDocumentation(), "Documentacion ADD_ASSET generada correctamente.");
+                    });
+
+                    document.getElementById("downloadCreateCaDocButton").addEventListener("click", function () {
+                        const accountNo = fieldOrDefault("createCaAccountNo", "02049901");
+                        const fileName = `doc_ext_op_cust_pol_create_ca_${sanitizedFilePart(accountNo)}.md`;
+                        downloadDocumentation("createCaResult", fileName, buildCreateCaDocumentation(), "Documentacion CREATE_CA generada correctamente.");
+                    });
+
+                    document.getElementById("downloadCreateBaDocButton").addEventListener("click", function () {
+                        const accountNo = fieldOrDefault("createBaAccountNo", "02049908");
+                        const parentName = fieldOrDefault("createBaParentName", "02049901");
+                        const fileName = `doc_ext_op_cust_pol_create_ba_${sanitizedFilePart(accountNo)}_parent_${sanitizedFilePart(parentName)}.md`;
+                        downloadDocumentation("createBaResult", fileName, buildCreateBaDocumentation(), "Documentacion CREATE_BA generada correctamente.");
                     });
 
                     document.getElementById("entelForm").addEventListener("submit", function (event) {
